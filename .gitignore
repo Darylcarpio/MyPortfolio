@@ -23,6 +23,7 @@ config.php
 .env
 .env.local
 .env.*.local
+.env.production
 
 # Database Backups & Data
 backups/
