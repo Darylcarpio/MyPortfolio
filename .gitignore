@@ -1,0 +1,96 @@
+/.idea/
+/.vscode/
+node_modules/
+vendor/
+logs/
+Temp/
+backups/
+.env
+.env.local
+.env.*.local
+.DS_Store
+Thumbs.db
+*.log
+*.sql
+*.zip
+/.history/
+/.cache/
+/.phpunit.result.cache
+
+# Ignore local config with credentials
+config.php
+# Environment & Configuration
+.env
+.env.local
+.env.*.local
+
+# Database Backups & Data
+backups/
+*.sql
+*.sql.gz
+
+# Logs
+logs/
+*.log
+error_log
+
+# Temporary Files
+Temp/
+tmp/
+temp/
+*.tmp
+*.cache
+
+# Local Development
+memory/
+.vscode/
+.idea/
+*.code-workspace
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Windows-Specific (Development Scripts)
+*.bat
+*.cmd
+*.exe
+
+# Testing & Diagnostic Files (dev only)
+*_DIAGNOSTIC.php
+*_TESTER.php
+TEST_*.php
+QUICK_FIX*.php
+diagnostic.php
+full_diagnostic.php
+check_status.php
+verify_database.php
+
+# Backup & Setup Scripts (dev only)
+*_setup*.php
+database_init.php
+BACKUP_STATUS.php
+SYSTEM_BACKUP.php
+admin_login.php
+*_FIX*.php
+*_BACKUP*.php
+*_RESTORE*.php
+add_sample_data.php
+cleanup_data.php
+init_data.php
+
+# Node modules & Package Managers
+node_modules/
+vendor/
+composer.lock
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+
+# Audio & Media (if large)
+# audio/ (uncomment if very large)
