@@ -29,12 +29,23 @@ $dal->logPageView('dashboard');
 $profile = $dal->getProfile();
 if (!$profile) {
     $profile = [
-        'name' => 'Portfolio Owner',
-        'title' => 'Student Portfolio',
+        'full_name' => 'Portfolio Owner',
+        'professional_title' => 'Student Portfolio',
         'location' => 'Philippines',
-        'vision' => 'Building a future in technology.',
+        'bio' => 'Building a future in technology.',
         'profile_image' => 'Me.jpg'
     ];
+}
+
+// Normalize column names for backward compatibility
+if (isset($profile['full_name'])) {
+    $profile['name'] = $profile['full_name'];
+}
+if (isset($profile['professional_title'])) {
+    $profile['title'] = $profile['professional_title'];
+}
+if (isset($profile['bio'])) {
+    $profile['vision'] = $profile['bio'];
 }
 ?>
 <!DOCTYPE html>
@@ -284,22 +295,22 @@ if (!$profile) {
             font-weight: bold;
         }
         
-        /* Remove link styling */
-        .contact-info a {
-            text-decoration: none;
-            color: inherit;
-            cursor: default;
-            pointer-events: none;
+        /* Allow specific contact links to be clickable */
+        .contact-info a.contact-link {
+            text-decoration: underline;
+            color: var(--highlight);
+            cursor: pointer;
+            pointer-events: auto;
         }
-        
+
         .contact-item {
             cursor: default;
         }
-        
+
         .contact-item[onclick] {
             cursor: pointer;
         }
-        
+
         .contact-item[onclick]:hover {
             transform: translateX(10px);
         }
@@ -657,23 +668,32 @@ if (!$profile) {
 
         <div class="contact-info">
             <div class="contact-grid">
-                <!-- Email - Click to copy still works -->
+                <!-- Email - Clickable for inquiries -->
+                <?php
+                $email = $profile['email'] ?? 'carpiodarryl@gmail.com';
+                ?>
                 <div class="contact-item" onclick="copyEmail()">
                     <div class="contact-icon">📧</div>
                     <div class="contact-text">
                         <strong>Email Address</strong>
-                        <p>carpiodarryl@gmail.com</p>
-                        <small style="color: var(--highlight); font-size: 0.85rem;">Click to copy!</small>
+                        <p><?php echo htmlspecialchars($email); ?></p>
+                        <small style="color: var(--highlight); font-size: 0.85rem;">Click to copy or <a href="mailto:<?php echo htmlspecialchars($email); ?>" class="contact-link">send email</a></small>
                     </div>
                 </div>
 
-                <!-- Facebook - Display only, no link -->
-                <div class="contact-item">
+                <!-- Facebook - Clickable if configured -->
+                <?php
+                $facebook = $profile['facebook'] ?? '';
+                $fb_name = $profile['full_name'] ?? $profile['name'] ?? 'Bryan Darryl Carpio';
+                ?>
+                <div class="contact-item" <?php echo !empty($facebook) ? 'onclick="window.open(\'' . htmlspecialchars($facebook) . '\', \'_blank\')"' : ''; ?>>
                     <div class="contact-icon">👤</div>
                     <div class="contact-text">
                         <strong>Facebook Profile</strong>
-                        <p>Bryan Darryl Carpio</p>
-                        <small style="font-size: 0.85rem;">For privacy, link is hidden</small>
+                        <p><?php echo htmlspecialchars($fb_name); ?></p>
+                        <small style="font-size: 0.85rem; color: <?php echo !empty($facebook) ? 'var(--highlight)' : 'var(--text-secondary)'; ?>;">
+                            <?php echo !empty($facebook) ? 'Click to visit' : 'Link not configured'; ?>
+                        </small>
                     </div>
                 </div>
 
@@ -687,13 +707,16 @@ if (!$profile) {
                     </div>
                 </div>
 
-                <!-- Location - Display only, no link -->
+                <!-- Location - Display only, not clickable -->
+                <?php
+                $location = $profile['location'] ?? 'Brgy. Diteki San Luis, Aurora, Philippines';
+                ?>
                 <div class="contact-item">
                     <div class="contact-icon">📍</div>
                     <div class="contact-text">
                         <strong>Location</strong>
-                        <p>Brgy. Diteki San Luis, Aurora, Philippines</p>
-                        <small style="font-size: 0.85rem;">My hometown</small>
+                        <p><?php echo htmlspecialchars($location); ?></p>
+                        <small style="font-size: 0.85rem;">Privacy protected</small>
                     </div>
                 </div>
             </div>

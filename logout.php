@@ -18,6 +18,6 @@ header('Pragma: no-cache');
 header('Expires: 0');
 
 // Redirect to index/login page
-header('Location: /MyWebsite/index.php', true, 302);
+header('Location: index.php', true, 302);
 exit('Redirecting...');
 ?>

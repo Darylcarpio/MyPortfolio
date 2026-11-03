@@ -8,12 +8,12 @@ header('Pragma: no-cache');
 header('Expires: 0');
 
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
-    header('Location: /MyWebsite/index.php', true, 302);
+    header('Location: index.php', true, 302);
     exit();
 }
 
 if (isset($_GET['logout'])) {
-    header('Location: /MyWebsite/logout.php', true, 302);
+    header('Location: logout.php', true, 302);
     exit();
 }
 
@@ -30,6 +30,17 @@ $elapsed_str = $elapsed < 60 ? $elapsed . 's ago' : floor($elapsed / 60) . 'm ' 
 $profile_data = $dal->getProfile();
 if (!$profile_data) {
     $profile_data = []; // Handle case where no profile exists
+} else {
+    // Normalize column names for backward compatibility
+    if (isset($profile_data['full_name'])) {
+        $profile_data['name'] = $profile_data['full_name'];
+    }
+    if (isset($profile_data['professional_title'])) {
+        $profile_data['title'] = $profile_data['professional_title'];
+    }
+    if (isset($profile_data['bio'])) {
+        $profile_data['vision'] = $profile_data['bio'];
+    }
 }
 
 // Get education data and format achievements
@@ -393,6 +404,28 @@ $page_view_count = $dal->getPageViewCount('dashboard');
     }
 
     .tb-session strong { color: var(--green); }
+
+    .tb-settings {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid var(--cborder);
+        color: var(--muted);
+        font-size: 1.1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .tb-settings:hover {
+        background: rgba(102,126,234,0.15);
+        border-color: rgba(102,126,234,0.3);
+        color: var(--accent);
+        transform: rotate(45deg);
+    }
 
     /* ─── HAMBURGER MENU (Mobile) ─────────────── */
     .btn-menu {
@@ -1214,6 +1247,9 @@ $page_view_count = $dal->getPageViewCount('dashboard');
             <?= $admin_user ?>
         </div>
         <div class="tb-session">Session: <strong><?= $elapsed_str ?></strong></div>
+        <button class="tb-settings" onclick="window.location.href='admin_recover.php'" title="Manage Admin Credentials">
+            ⚙️
+        </button>
     </div>
 </header>
 
@@ -1303,14 +1339,6 @@ $page_view_count = $dal->getPageViewCount('dashboard');
                 <div class="qb-ico">🔐</div>
                 Backup & Restore
             </button>
-            <button class="qb" onclick="window.location.href='SYSTEM_BACKUP.php'" style="border: 2px solid #f59e0b; background: rgba(245, 158, 11, 0.05);">
-                <div class="qb-ico">💾</div>
-                Full Backup
-            </button>
-            <button class="qb" onclick="window.location.href='BACKUP_STATUS.php'">
-                <div class="qb-ico">🔍</div>
-                Backup Status
-            </button>
         </div>
     </div>
 
@@ -1380,8 +1408,7 @@ $page_view_count = $dal->getPageViewCount('dashboard');
                     <div class="spill-v"><?= $elapsed_str ?></div>
                 </div>
             </div>
-            <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--cborder); display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
-                <a class="btn btn-p btn-sm" href="admin_recover.php">🔑 Manage Admin Credentials</a>
+            <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--cborder);">
                 <div style="color: var(--muted); font-size: 0.78rem;">
                     Emergency bypass URL (not public): <strong>admin_bypass.php?token=YOUR_TOKEN</strong>
                 </div>
@@ -1411,11 +1438,11 @@ $page_view_count = $dal->getPageViewCount('dashboard');
             <div class="fr">
                 <div class="fg-row">
                     <label>Full Name</label>
-                    <input type="text" class="fc" id="fullname" value="<?= $profile_data['name'] ?>" placeholder="Enter your full name">
+                    <input type="text" class="fc" id="fullname" value="<?= $profile_data['name'] ?? '' ?>" placeholder="Enter your full name">
                 </div>
                 <div class="fg-row">
                     <label>Title / Tagline</label>
-                    <input type="text" class="fc" id="ptitle" value="<?= $profile_data['title'] ?>" placeholder="BSIT Student | Web Developer">
+                    <input type="text" class="fc" id="ptitle" value="<?= $profile_data['title'] ?? '' ?>" placeholder="BSIT Student | Web Developer">
                 </div>
             </div>
             
@@ -1475,16 +1502,16 @@ $page_view_count = $dal->getPageViewCount('dashboard');
             <div class="fr">
                 <div class="fg-row">
                     <label>Location</label>
-                    <input type="text" class="fc" id="location" value="<?= $profile_data['location'] ?>">
+                    <input type="text" class="fc" id="location" value="<?= $profile_data['location'] ?? '' ?>">
                 </div>
                 <div class="fg-row">
                     <label>Email Address</label>
-                    <input type="email" class="fc" id="email" value="<?= $profile_data['email'] ?>">
+                    <input type="email" class="fc" id="email" value="<?= $profile_data['email'] ?? '' ?>">
                 </div>
             </div>
             <div class="fg-row">
                 <label>Facebook URL</label>
-                <input type="text" class="fc" id="facebook" value="<?= $profile_data['facebook'] ?>" placeholder="https://facebook.com/yourprofile">
+                <input type="text" class="fc" id="facebook" value="<?= $profile_data['facebook'] ?? '' ?>" placeholder="https://facebook.com/yourprofile">
             </div>
             <div class="img-up">
                 <img src="img/Me.jpg" alt="Profile" class="cur-img" id="pprev" onerror="this.style.display='none'">

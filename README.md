@@ -16,12 +16,13 @@
 - **Project Showcase** - Browse implemented projects with technologies used
 - **Education Timeline** - View educational background and achievements
 - **Hobbies & Interests** - Discover personal interests and skills
-- **Contact Information** - Easy access to contact channels
+- **Contact Information** - Easy access to contact channels with clickable email and Facebook links
 - **Responsive Design** - Works on desktop, tablet, and mobile devices
-- **Visitor Portal** - Public sign-in and sign-up entry for visitor accounts
+- **Visitor Portal** - Public sign-in and sign-up entry for visitor accounts (24-hour session)
+- **Simplified UI** - Clean, modern interface without nested borders
 
 ### 🔐 For Admin (Management Panel)
-- **Profile Management** - Edit profile information, professional title, bio, vision
+- **Profile Management** - Edit profile information, professional title, bio, vision, and Facebook URL
 - **Project Management** - Add, edit, delete projects with technology tags
 - **Education Tracking** - Manage education records and achievements
 - **Hobbies & Skills** - Organize personal interests by category
@@ -30,6 +31,8 @@
 - **Data Snapshots** - Backup individual sections before making changes
 - **Full System Backup** - Create complete backup of database and files
 - **System Restore** - Restore from previous backups quickly
+- **Admin Credential Management** - Access via settings icon in top bar
+- **Database Migration Tools** - Easy column addition and structure fixes
 
 ---
 
@@ -408,14 +411,19 @@ This portfolio system is designed to showcase professional work in web developme
 
 ## Changelog
 
-### Version 2.0 (Current)
-- ✅ Complete backup/restore system
-- ✅ Full system backup capability
-- ✅ Section-level snapshots
-- ✅ Admin panel enhancements
-- ✅ Security improvements
-- ✅ Batch file launchers
-- ✅ Developer tools protection
+### Version 2.1 (October 2026)
+- ✅ Added Facebook URL field to profile
+- ✅ Made email and Facebook clickable for visitors
+- ✅ Simplified visitor portal UI (removed nested borders)
+- ✅ Extended guest session to 24 hours
+- ✅ Updated UI text from "visitor" to generic "account" terms
+- ✅ Added settings icon in admin panel for credential management
+- ✅ Created database migration tools (add_facebook_column.php, fix_all_columns.php)
+- ✅ Added deployment diagnostic tools (deployment_check.php, check_db_structure.php)
+- ✅ Fixed column name mismatch (full_name vs name, professional_title vs title)
+- ✅ Added null checks to prevent admin panel errors
+- ✅ Created safe database initialization (db_init_safe.php)
+- ✅ Added admin password reset tool (admin_reset.php)
 
 ### Version 1.0
 - Core portfolio functionality

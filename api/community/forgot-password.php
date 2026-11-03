@@ -16,13 +16,13 @@ try {
     $email = trim($_POST['email'] ?? '');
 
     if (empty($email)) {
-        header('Location: /MyWebsite/community/forgot-password.php?error=invalid');
+        header('Location: ../../community/forgot-password.php?error=invalid');
         exit();
     }
 
     // Validate email format
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        header('Location: /MyWebsite/community/forgot-password.php?error=invalid');
+        header('Location: ../../community/forgot-password.php?error=invalid');
         exit();
     }
 
@@ -40,7 +40,7 @@ try {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user) {
-        header('Location: /MyWebsite/community/forgot-password.php?error=not_found');
+        header('Location: ../../community/forgot-password.php?error=not_found');
         exit();
     }
 
@@ -56,7 +56,7 @@ try {
     $stmt->execute([$user['id'], $user['email'], $reset_token, $expires_at]);
 
     // Create reset link
-    $reset_link = "http://localhost/MyWebsite/community/reset-password.php?token=" . $reset_token;
+    $reset_link = "https://your-subdomain.epizy.com/community/reset-password.php?token=" . $reset_token;
 
     // Send email with reset link
     $to = $user['email'];
@@ -112,12 +112,12 @@ try {
     error_log("Reset Link: " . $reset_link);
 
     // Redirect with success message
-    header('Location: /MyWebsite/community/forgot-password.php?success=1');
+    header('Location: ../../community/forgot-password.php?success=1');
     exit();
 
 } catch (Exception $e) {
     error_log("Forgot Password Error: " . $e->getMessage());
-    header('Location: /MyWebsite/community/forgot-password.php?error=server');
+    header('Location: ../../community/forgot-password.php?error=server');
     exit();
 }
 ?>

@@ -1,6 +1,12 @@
 <?php
-session_start();
 require_once __DIR__ . '/config.php';
+
+// Set session lifetime for guest accounts (24 hours by default) BEFORE starting session
+$guest_session_lifetime = defined('GUEST_SESSION_LIFETIME') ? GUEST_SESSION_LIFETIME : 86400;
+ini_set('session.gc_maxlifetime', $guest_session_lifetime);
+session_set_cookie_params($guest_session_lifetime);
+
+session_start();
 
 if (isset($_SESSION['guest_logged_in']) && $_SESSION['guest_logged_in'] === true) {
     header('Location: dashboard.php');
@@ -130,9 +136,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Please enter both your name and password.';
     } else {
         if ($action === 'signup') {
+            // Require full name on signup (first and last)
+            if (substr_count(trim($name), ' ') < 1) {
+                setGuestFlash('error', 'Please enter your full name (first and last).', null, 'signup');
+                header('Location: guest_access.php?tab=signup');
+                exit();
+            }
+
             $username = preg_replace('/[^a-zA-Z0-9_]+/', '', strtolower($name));
             if ($username === '') {
-                $username = 'guestuser';
+                $username = 'user' . time();
             }
 
             try {
@@ -140,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([$username]);
 
                 if ($stmt->fetch()) {
-                    setGuestFlash('error', 'That visitor name is already taken. Please choose another name.', null, 'signup');
+                    setGuestFlash('error', 'That name is already taken. Please choose another name.', null, 'signup');
                     header('Location: guest_access.php?tab=signup');
                     exit();
                 } else {
@@ -148,13 +161,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $passwordCheck->execute();
                     while ($existingHash = $passwordCheck->fetchColumn()) {
                         if (password_verify($password, $existingHash)) {
-                            setGuestFlash('error', 'Password already exists for a visitor account. Try a unique password.', null, 'signup');
+                            setGuestFlash('error', 'Password already exists for an account. Try a unique password.', null, 'signup');
                             header('Location: guest_access.php?tab=signup');
                             exit();
                         }
                     }
 
-                    $email = $username . '@guest.local';
+                    $email = $username . '@user.local';
                     $password_hash = password_hash($password, PASSWORD_DEFAULT);
                     $stmt = $db->prepare(
                         "INSERT INTO community_users (email, username, first_name, last_name, phone_number, password_hash, status, email_verified, email_verified_at, created_at)
@@ -168,12 +181,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $password_hash
                     ]);
 
-                    setGuestFlash('success', 'Visitor account created successfully. Please sign in now.', null, 'signin');
+                    setGuestFlash('success', 'Account created successfully. Please sign in now.', null, 'signin');
                     header('Location: guest_access.php?tab=signin');
                     exit();
                 }
             } catch (Exception $e) {
-                setGuestFlash('error', 'Guest sign up failed. Please try a different name.', null, 'signup');
+                setGuestFlash('error', 'Sign up failed. Please try a different name.', null, 'signup');
                 header('Location: guest_access.php?tab=signup');
                 exit();
             }
@@ -189,12 +202,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit();
             }
 
-            $adminStmt = $db->prepare("SELECT id, username, email, password_hash FROM admin_users WHERE username = ? OR email = ? LIMIT 1");
-            $adminStmt->execute([$name, $name]);
+            $adminStmt = $db->prepare("SELECT id, username, email, password_hash FROM admin_users WHERE BINARY username = BINARY ? LIMIT 1");
+            $adminStmt->execute([$name]);
             $admin = $adminStmt->fetch(PDO::FETCH_ASSOC);
 
             if ($admin) {
-                $adminValid = password_verify($password, $admin['password_hash']) || $password === $admin['password_hash'];
+                $adminValid = password_verify($password, $admin['password_hash']);
                 if ($adminValid) {
                     resetLock($conn, $signinLockKey);
                     $_SESSION['admin_logged_in'] = true;
@@ -208,6 +221,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            // If not an admin, require full name (first and last) for sign-in
+            if (strpos(trim($name), ' ') === false) {
+                setGuestFlash('error', 'Please enter your full name (first and last) to sign in.', null, 'signin');
+                header('Location: guest_access.php?tab=signin');
+                exit();
+            }
+
             $lookupName = preg_replace('/[^a-zA-Z0-9_]+/', '', strtolower($name));
             $guestStmt = $db->prepare("SELECT id, username, first_name, password_hash, status FROM community_users WHERE LOWER(username) = LOWER(?) OR LOWER(first_name) = LOWER(?) OR LOWER(email) = LOWER(?) LIMIT 1");
             $guestStmt->execute([$name, $name, $name]);
@@ -218,7 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $guest = $guestStmt->fetch(PDO::FETCH_ASSOC);
             }
 
-            if ($guest && $guest['status'] === 'active' && (password_verify($password, $guest['password_hash']) || $password === $guest['password_hash'])) {
+            if ($guest && $guest['status'] === 'active' && password_verify($password, $guest['password_hash'])) {
                     resetLock($conn, $signinLockKey);
                     $_SESSION['guest_logged_in'] = true;
                     $_SESSION['guest_name'] = $guest['first_name'] ?: $guest['username'];
@@ -247,7 +267,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BDC HUB Visitor Portal</title>
+    <title>BDC HUB - Sign In</title>
     <style>
         :root { color-scheme: dark; }
         * { box-sizing: border-box; }
@@ -264,80 +284,86 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         .wrap {
             width: 100%;
-            max-width: 900px;
-            background: rgba(255,255,255,0.10);
-            border: 1px solid rgba(255,255,255,0.18);
-            border-radius: 24px;
-            padding: 32px;
-            backdrop-filter: blur(12px);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+            max-width: 420px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 20px;
+            padding: 40px 32px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
         }
         .brand {
             display: inline-block;
-            padding: 6px 10px;
+            padding: 6px 12px;
             border-radius: 999px;
-            background: rgba(255,255,255,0.14);
-            font-size: 0.8rem;
+            background: rgba(255,255,255,0.12);
+            font-size: 0.75rem;
             letter-spacing: 0.18em;
             text-transform: uppercase;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
+            font-weight: 600;
         }
-        h1 { margin: 0 0 10px; font-size: 2rem; }
-        p { color: #e2e8f0; line-height: 1.7; }
+        h1 { margin: 0 0 8px; font-size: 1.75rem; font-weight: 700; }
+        p { color: #cbd5e1; line-height: 1.6; margin-bottom: 28px; font-size: 0.95rem; }
         .panel {
             display: none;
-            background: rgba(255,255,255,0.12);
-            border: 1px solid rgba(255,255,255,0.16);
-            border-radius: 18px;
-            padding: 20px;
-            margin-top: 18px;
             opacity: 0;
-            transform: translateY(12px) scale(0.985);
-            transition: opacity 0.22s ease, transform 0.22s ease;
+            transform: translateY(10px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
         }
         .panel.active {
             display: block;
             opacity: 1;
-            transform: translateY(0) scale(1);
+            transform: translateY(0);
+        }
+        .panel h3 {
+            margin: 0 0 24px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #fff;
         }
         .panel-actions {
             text-align: center;
-            margin-top: 14px;
-            font-size: 0.95rem;
-            color: #e2e8f0;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.9rem;
+            color: #cbd5e1;
         }
         .panel-actions a {
             color: #fbbf24;
             text-decoration: none;
-            font-weight: 700;
+            font-weight: 600;
         }
         .panel-actions a:hover {
             text-decoration: underline;
         }
-        .card {
-            background: rgba(255,255,255,0.12);
-            border: 1px solid rgba(255,255,255,0.16);
-            border-radius: 18px;
-            padding: 20px;
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #e2e8f0;
         }
-        label { display: block; margin-bottom: 6px; font-weight: 600; }
         .password-field {
             position: relative;
         }
         input {
             width: 100%;
-            padding: 12px 54px 12px 14px;
-            border: 1px solid rgba(255,255,255,0.28);
-            border-radius: 10px;
-            background: rgba(248,250,252,0.92);
-            color: #0f172a;
-            margin-bottom: 12px;
+            padding: 14px 50px 14px 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            margin-bottom: 16px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
         }
         input::placeholder { color: #64748b; }
         input:focus {
             outline: none;
             border-color: #fbbf24;
-            box-shadow: 0 0 0 3px rgba(251,191,36,0.18);
+            background: rgba(255,255,255,0.12);
+            box-shadow: 0 0 0 3px rgba(251,191,36,0.15);
         }
         input[type="password"]::-ms-reveal,
         input[type="password"]::-ms-clear {
@@ -351,56 +377,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         .toggle-password {
             position: absolute;
-            right: 10px;
+            right: 12px;
             top: 50%;
-            transform: translateY(-54%);
-            width: auto;
-            min-width: 34px;
-            height: 34px;
-            padding: 0 10px;
+            transform: translateY(-50%);
+            width: 32px;
+            height: 32px;
+            padding: 0;
             border: none;
             background: transparent;
-            color: #1d4ed8;
+            color: #94a3b8;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            line-height: 1;
             cursor: pointer;
             z-index: 2;
-            opacity: 1;
-            visibility: visible;
-            transition: opacity 0.18s ease, transform 0.18s ease, color 0.18s ease;
+            transition: color 0.2s ease;
         }
         .toggle-password:hover {
-            color: #2563eb;
+            color: #fbbf24;
         }
         .toggle-password.hidden {
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
         }
-        button {
+        button[type="submit"] {
             width: 100%;
-            padding: 12px 16px;
+            padding: 14px 20px;
             border: none;
-            border-radius: 999px;
+            border-radius: 12px;
             background: linear-gradient(135deg, #f59e0b, #fbbf24);
             color: #111827;
             font-weight: 700;
+            font-size: 1rem;
             cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        .button-row {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-top: 18px;
+        button[type="submit"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(251,191,36,0.35);
         }
-        .error { color: #fecaca; margin-top: 10px; }
-        .small { font-size: 0.92rem; color: #cbd5e1; }
+        .error { color: #fecaca; margin-top: 12px; font-size: 0.9rem; }
         .toggle-password svg {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             display: block;
             fill: none;
             stroke: currentColor;
@@ -410,23 +430,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         .toast {
             position: fixed;
-            top: 18px;
+            top: 20px;
             left: 50%;
             transform: translateX(-50%);
             min-width: 280px;
             max-width: min(92vw, 540px);
-            padding: 14px 18px;
-            border-radius: 14px;
+            padding: 14px 20px;
+            border-radius: 12px;
             color: #fff;
             font-weight: 600;
-            box-shadow: 0 12px 28px rgba(0,0,0,0.28);
+            font-size: 0.95rem;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.3);
             z-index: 9999;
             opacity: 0;
-            animation: toastIn 0.18s ease forwards;
+            animation: toastIn 0.25s ease forwards;
         }
         .toast.success { background: linear-gradient(135deg, #16a34a, #22c55e); }
         .toast.error { background: linear-gradient(135deg, #dc2626, #ef4444); }
-        .toast.hide { animation: toastOut 0.2s ease forwards; }
+        .toast.hide { animation: toastOut 0.25s ease forwards; }
         @keyframes toastIn {
             from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -446,54 +467,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div class="wrap">
         <div class="brand">BDC HUB</div>
-        <h1>Visitor Portal</h1>
-        <p>Select Visitor to sign in or Join as Visitor to create an account.</p>
+        <h1>Welcome</h1>
+        <p>Sign in to your account or sign up to create a new account.</p>
 
         <?php if (!empty($message)) : ?>
             <div class="error"><?= htmlspecialchars($message) ?></div>
         <?php endif; ?>
 
         <div id="signinPanel" class="panel">
-            <div class="card">
-                <h3>Visitor Sign In</h3>
-                <form method="post" autocomplete="off">
-                    <input type="hidden" name="action" value="signin">
-                    <label for="signin_name">Name</label>
-                    <input id="signin_name" name="name" autocomplete="off" required>
-                    <label for="signin_password">Password</label>
-                    <div class="password-field">
-                        <input id="signin_password" name="password" type="password" autocomplete="new-password" required>
-                        <button type="button" class="toggle-password" data-target="signin_password" aria-label="Show password">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
-                        </button>
-                    </div>
-                    <button type="submit">Sign In as Visitor</button>
-                </form>
+            <h3>Sign In to Your Account</h3>
+            <form method="post" autocomplete="off">
+                <input type="hidden" name="action" value="signin">
+                <label for="signin_name">Name</label>
+                <input id="signin_name" name="name" autocomplete="off" required>
+                <label for="signin_password">Password</label>
+                <div class="password-field">
+                    <input id="signin_password" name="password" type="password" autocomplete="new-password" required>
+                    <button type="button" class="toggle-password" data-target="signin_password" aria-label="Show password">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+                <button type="submit">Sign In</button>
+            </form>
+            <div class="panel-actions">
+                Don't have an account? <a href="#" id="goSignup">Sign Up</a>
             </div>
         </div>
 
         <div id="signupPanel" class="panel">
-            <div class="card">
-                <h3>Join as Visitor</h3>
-                <form method="post" autocomplete="off">
-                    <input type="hidden" name="action" value="signup">
-                    <label for="signup_name">Name</label>
-                    <input id="signup_name" name="name" autocomplete="off" required>
-                    <label for="signup_password">Password</label>
-                    <div class="password-field">
-                        <input id="signup_password" name="password" type="password" autocomplete="new-password" required>
-                        <button type="button" class="toggle-password" data-target="signup_password" aria-label="Show password">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
-                        </button>
-                    </div>
-                    <button type="submit">Join as Visitor</button>
-                </form>
+            <h3>Sign Up</h3>
+            <form method="post" autocomplete="off">
+                <input type="hidden" name="action" value="signup">
+                <label for="signup_name">Name</label>
+                <input id="signup_name" name="name" autocomplete="off" required>
+                <label for="signup_password">Password</label>
+                <div class="password-field">
+                    <input id="signup_password" name="password" type="password" autocomplete="new-password" required>
+                    <button type="button" class="toggle-password" data-target="signup_password" aria-label="Show password">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+                <button type="submit">Sign Up</button>
+            </form>
+            <div class="panel-actions">
+                Already have an account? <a href="#" id="goSignin">Sign In</a>
             </div>
         </div>
     </div>
@@ -510,16 +533,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             signupPanel.classList.remove('active');
             panel.classList.add('active');
         }
-
-        const signInBottom = document.createElement('div');
-        signInBottom.className = 'panel-actions';
-        signInBottom.innerHTML = "Don't have an account? <a href='#' id='goSignup'>Join as Visitor</a>";
-        signinPanel.appendChild(signInBottom);
-
-        const signUpBottom = document.createElement('div');
-        signUpBottom.className = 'panel-actions';
-        signUpBottom.innerHTML = 'Already have an account? <a href="#" id="goSignin">Sign In as Visitor</a>';
-        signupPanel.appendChild(signUpBottom);
 
         document.getElementById('goSignup').addEventListener('click', function (event) {
             event.preventDefault();

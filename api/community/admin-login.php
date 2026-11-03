@@ -11,7 +11,7 @@ require_once dirname(__FILE__) . '/../../config.php';
 try {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         http_response_code(405);
-        header('Location: /MyWebsite/community/index-new.php?error=invalid', true, 302);
+        header('Location: ../../community/index-new.php?error=invalid', true, 302);
         exit();
     }
 
@@ -19,7 +19,7 @@ try {
     $password = $_POST['password'] ?? '';
 
     if (empty($email) || empty($password)) {
-        header('Location: /MyWebsite/community/index-new.php?error=invalid', true, 302);
+        header('Location: ../../community/index-new.php?error=invalid', true, 302);
         exit();
     }
 
@@ -37,7 +37,7 @@ try {
     $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$admin) {
-        header('Location: /MyWebsite/community/index-new.php?error=invalid', true, 302);
+        header('Location: ../../community/index-new.php?error=invalid', true, 302);
         exit();
     }
 
@@ -68,14 +68,14 @@ try {
             $entry = date('c') . " | ADMIN_LOGIN_FAIL | email=" . $email . " | reason=wrong_password | admin_id=" . ($admin['id'] ?? 'n/a') . PHP_EOL;
             @file_put_contents($logPath, $entry, FILE_APPEND | LOCK_EX);
 
-            header('Location: /MyWebsite/community/index-new.php?error=invalid', true, 302);
+            header('Location: ../../community/index-new.php?error=invalid', true, 302);
             exit();
         }
     }
 
     // Check status
     if ($admin['status'] !== 'active') {
-        header('Location: /MyWebsite/community/index-new.php?error=invalid', true, 302);
+        header('Location: ../../community/index-new.php?error=invalid', true, 302);
         exit();
     }
 
@@ -93,11 +93,11 @@ try {
     $_SESSION['community_admin_logged_in'] = true;
 
     // Redirect to admin dashboard
-    header('Location: /MyWebsite/community/admin/', true, 302);
+    header('Location: ../../community/admin/', true, 302);
     exit();
 
 } catch (Exception $e) {
-    header('Location: /MyWebsite/community/index-new.php?error=invalid', true, 302);
+    header('Location: ../../community/index-new.php?error=invalid', true, 302);
     exit();
 }
 ?>

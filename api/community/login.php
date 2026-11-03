@@ -78,7 +78,7 @@ try {
                 // If form POST (not JSON), redirect instead of JSON
                 $content_type = $_SERVER['CONTENT_TYPE'] ?? '';
                 if (strpos($content_type, 'application/json') === false) {
-                    header('Location: /MyWebsite/community/dashboard.php', true, 302);
+                    header('Location: ../../community/dashboard.php', true, 302);
                     exit('Redirecting to dashboard...');
                 }
             } else {
@@ -95,7 +95,7 @@ try {
                 $content_type = $_SERVER['CONTENT_TYPE'] ?? '';
                 $errorCode = $result['code'] ?? 'invalid';
                 if (strpos($content_type, 'application/json') === false) {
-                    header('Location: /MyWebsite/community/index-new.php?error=' . urlencode($errorCode), true, 302);
+                    header('Location: ../../community/index-new.php?error=' . urlencode($errorCode), true, 302);
                     exit('Login failed. Redirecting...');
                 }
             }
