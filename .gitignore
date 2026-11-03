@@ -1,34 +1,20 @@
+# IDE
 /.idea/
 /.vscode/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+
+# Dependencies
 node_modules/
 vendor/
-logs/
-Temp/
-backups/
-.env
-.env.local
-.env.*.local
-.DS_Store
-Thumbs.db
-*.log
-*.sql
-*.zip
-/.history/
-/.cache/
-/.phpunit.result.cache
+composer.lock
 
-# Ignore local config with credentials
-config.php
-# Environment & Configuration
+# Environment & Credentials (IMPORTANT: Never commit these)
 .env
 .env.local
 .env.*.local
 .env.production
-
-# Database Backups & Data
-backups/
-*.sql
-*.sql.gz
 
 # Logs
 logs/
@@ -41,24 +27,26 @@ tmp/
 temp/
 *.tmp
 *.cache
+/.history/
+/.cache/
 
-# Local Development
-memory/
-.vscode/
-.idea/
-*.code-workspace
+# Database Backups
+backups/
+*.sql
+*.sql.gz
+*.zip
 
 # OS Files
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# Windows-Specific (Development Scripts)
+# Windows Development Scripts (local only)
 *.bat
 *.cmd
-*.exe
+admin_bypass.php
 
-# Testing & Diagnostic Files (dev only)
+# Development/Diagnostic Files (local only)
 *_DIAGNOSTIC.php
 *_TESTER.php
 TEST_*.php
@@ -67,31 +55,12 @@ diagnostic.php
 full_diagnostic.php
 check_status.php
 verify_database.php
-
-# Backup & Setup Scripts (dev only)
 *_setup*.php
-database_init.php
 BACKUP_STATUS.php
 SYSTEM_BACKUP.php
-admin_login.php
 *_FIX*.php
 *_BACKUP*.php
 *_RESTORE*.php
 add_sample_data.php
 cleanup_data.php
 init_data.php
-
-# Node modules & Package Managers
-node_modules/
-vendor/
-composer.lock
-
-# IDE & Editor files
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
-.DS_Store
-
-# Audio & Media (if large)
-# audio/ (uncomment if very large)
