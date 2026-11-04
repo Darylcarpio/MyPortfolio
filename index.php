@@ -112,12 +112,12 @@ session_start();
                 <path d="M22 36 H42" stroke="url(#hubGrad)" stroke-width="3" stroke-linecap="round" />
             </svg>
         </div>
-        <h1>Welcome to My Portfolio</h1>
+        <h1>Welcome To My World</h1>
         <p class="lead">Bryan Darryl Carpio - Software Developer. View my projects, skills, and experience.</p>
 
         <div class="actions">
             <a class="btn btn-primary" href="dashboard.php">View Portfolio</a>
-            <a class="btn" href="admin_login.php" style="background: rgba(255,255,255,0.10); color: #f8fafc; border: 1px solid rgba(255,255,255,0.18);">Admin</a>
+            <a class="btn" href="admin_login.php" style="background: rgba(255,255,255,0.10); color: #f8fafc; border: 1px solid rgba(255,255,255,0.18);">Sign In Your Account</a>
         </div>
     </div>
 </body>
