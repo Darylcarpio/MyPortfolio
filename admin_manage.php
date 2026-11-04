@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if ($action == 'update_credentials') {
         $new_username = trim($_POST['new_username'] ?? '');
         $new_password = $_POST['new_password'] ?? '';
+        $confirm_password = $_POST['confirm_password'] ?? '';
         $current_password = $_POST['current_password'] ?? '';
 
         // Verify current password
@@ -34,21 +35,41 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if (!$admin || !password_verify($current_password, $admin['password_hash'])) {
             $error_message = 'Current password is incorrect';
         } else {
-            // Update credentials
-            if (!empty($new_username)) {
-                $password_hash = !empty($new_password) ? password_hash($new_password, PASSWORD_BCRYPT) : $admin['password_hash'];
-                $email = $_SESSION['admin_email'];
+            // Validate new password if provided
+            if (!empty($new_password)) {
+                // Password criteria: at least 8 characters, at least 1 uppercase, 1 lowercase, 1 number
+                if (strlen($new_password) < 8) {
+                    $error_message = 'Password must be at least 8 characters';
+                } elseif (!preg_match('/[A-Z]/', $new_password)) {
+                    $error_message = 'Password must contain at least 1 uppercase letter';
+                } elseif (!preg_match('/[a-z]/', $new_password)) {
+                    $error_message = 'Password must contain at least 1 lowercase letter';
+                } elseif (!preg_match('/[0-9]/', $new_password)) {
+                    $error_message = 'Password must contain at least 1 number';
+                } elseif ($new_password !== $confirm_password) {
+                    $error_message = 'Passwords do not match';
+                } else {
+                    // Update password
+                    $password_hash = password_hash($new_password, PASSWORD_BCRYPT);
+                    $stmt = $conn->prepare("UPDATE admin_users SET password_hash = ? WHERE id = ?");
+                    $stmt->execute([$password_hash, $_SESSION['admin_id']]);
 
-                $stmt = $conn->prepare("UPDATE admin_users SET username = ?, password_hash = ?, email = ? WHERE id = ?");
-                $stmt->execute([$new_username, $password_hash, $email, $_SESSION['admin_id']]);
-
+                    if (!empty($new_username)) {
+                        // Also update username if provided
+                        $stmt = $conn->prepare("UPDATE admin_users SET username = ? WHERE id = ?");
+                        $stmt->execute([$new_username, $_SESSION['admin_id']]);
+                        $_SESSION['admin_user'] = $new_username;
+                        $success_message = 'Username and password updated successfully!';
+                    } else {
+                        $success_message = 'Password updated successfully!';
+                    }
+                }
+            } elseif (!empty($new_username)) {
+                // Only update username
+                $stmt = $conn->prepare("UPDATE admin_users SET username = ? WHERE id = ?");
+                $stmt->execute([$new_username, $_SESSION['admin_id']]);
                 $_SESSION['admin_user'] = $new_username;
-                $success_message = 'Credentials updated successfully!';
-            } elseif (!empty($new_password)) {
-                $password_hash = password_hash($new_password, PASSWORD_BCRYPT);
-                $stmt = $conn->prepare("UPDATE admin_users SET password_hash = ? WHERE id = ?");
-                $stmt->execute([$password_hash, $_SESSION['admin_id']]);
-                $success_message = 'Password updated successfully!';
+                $success_message = 'Username updated successfully!';
             } else {
                 $error_message = 'Please enter a new username or password';
             }
@@ -229,11 +250,6 @@ $admin = $stmt->fetch(PDO::FETCH_ASSOC);
             <p>Update your username and password</p>
         </div>
 
-        <div class="current-info">
-            <p><strong>Current Username:</strong> <?php echo htmlspecialchars($admin['username']); ?></p>
-            <p><strong>Email:</strong> <?php echo htmlspecialchars($admin['email']); ?></p>
-        </div>
-
         <?php if ($error_message): ?>
             <div class="alert alert-error">
                 <?php echo htmlspecialchars($error_message); ?>
@@ -261,22 +277,34 @@ $admin = $stmt->fetch(PDO::FETCH_ASSOC);
             </div>
 
             <div class="form-group">
-                <label for="new_username">New Username (optional)</label>
+                <label for="new_username">New Username</label>
                 <input
                     type="text"
                     id="new_username"
                     name="new_username"
-                    placeholder="Leave blank to keep current"
+                    placeholder="Leave blank to keep current username"
                 >
+                <small style="color: rgba(248, 250, 252, 0.6); font-size: 0.8rem;">Username must be unique. Letters, numbers, and spaces allowed.</small>
             </div>
 
             <div class="form-group">
-                <label for="new_password">New Password (optional)</label>
+                <label for="new_password">New Password</label>
                 <input
                     type="password"
                     id="new_password"
                     name="new_password"
-                    placeholder="Leave blank to keep current"
+                    placeholder="Leave blank to keep current password"
+                >
+                <small style="color: rgba(248, 250, 252, 0.6); font-size: 0.8rem;">Minimum 8 characters, 1 uppercase, 1 lowercase, 1 number</small>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">Confirm New Password</label>
+                <input
+                    type="password"
+                    id="confirm_password"
+                    name="confirm_password"
+                    placeholder="Re-enter new password"
                 >
             </div>
 
