@@ -1247,7 +1247,7 @@ $page_view_count = $dal->getPageViewCount('dashboard');
             <?= $admin_user ?>
         </div>
         <div class="tb-session">Session: <strong><?= $elapsed_str ?></strong></div>
-        <button class="tb-settings" onclick="window.location.href='admin_recover.php'" title="Manage Admin Credentials">
+        <button class="tb-settings" onclick="window.location.href='admin_login.php'" title="Sign Out">
             ⚙️
         </button>
     </div>
