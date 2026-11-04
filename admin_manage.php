@@ -59,17 +59,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         $stmt = $conn->prepare("UPDATE admin_users SET username = ? WHERE id = ?");
                         $stmt->execute([$new_username, $_SESSION['admin_id']]);
                         $_SESSION['admin_user'] = $new_username;
-                        $success_message = 'Username and password updated successfully!';
+                        $success_message = 'Username and password updated successfully! You will be logged out in 3 seconds...';
                     } else {
-                        $success_message = 'Password updated successfully!';
+                        $success_message = 'Password updated successfully! You will be logged out in 3 seconds...';
                     }
+
+                    // Auto logout after successful credential change
+                    echo '<script>
+                    setTimeout(function() {
+                        window.location.href = "logout.php";
+                    }, 3000);
+                    </script>';
                 }
             } elseif (!empty($new_username)) {
                 // Only update username
                 $stmt = $conn->prepare("UPDATE admin_users SET username = ? WHERE id = ?");
                 $stmt->execute([$new_username, $_SESSION['admin_id']]);
                 $_SESSION['admin_user'] = $new_username;
-                $success_message = 'Username updated successfully!';
+                $success_message = 'Username updated successfully! You will be logged out in 3 seconds...';
+
+                // Auto logout after successful credential change
+                echo '<script>
+                setTimeout(function() {
+                    window.location.href = "logout.php";
+                }, 3000);
+                </script>';
             } else {
                 $error_message = 'Please enter a new username or password';
             }
