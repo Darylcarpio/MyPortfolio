@@ -295,6 +295,7 @@ try {
                     id="username"
                     name="username"
                     placeholder="Enter your username"
+                    autocomplete="off"
                     required
                     autofocus
                 >
@@ -307,6 +308,7 @@ try {
                     id="password"
                     name="password"
                     placeholder="Enter your password"
+                    autocomplete="new-password"
                     required
                 >
             </div>
