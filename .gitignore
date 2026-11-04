@@ -64,3 +64,15 @@ SYSTEM_BACKUP.php
 add_sample_data.php
 cleanup_data.php
 init_data.php
+
+# Admin & Database Tools (local only - security risk in production)
+reset_login_lock.php
+set_admin_password.php
+admin_reset.php
+test_env.php
+check_db_structure.php
+add_facebook_column.php
+complete_database.sql
+deployment_check.php
+db_init_safe.php
+fix_all_columns.php
