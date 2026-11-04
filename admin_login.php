@@ -294,7 +294,7 @@ try {
                     type="text"
                     id="username"
                     name="username"
-                    value="Y@iba Carpio"
+                    placeholder="Enter your username"
                     required
                     autofocus
                 >

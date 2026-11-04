@@ -736,6 +736,25 @@ if (isset($profile['bio'])) {
 <!-- ISO 25010: Performance Efficiency - Deferred Script Loading -->
 <script src="js/main.js" defer></script>
 
+<!-- Copy Email Function -->
+<script>
+function copyEmail() {
+    const email = "<?php echo htmlspecialchars($profile['email'] ?? 'carpiodarryl@gmail.com'); ?>";
+    navigator.clipboard.writeText(email).then(function() {
+        alert('Email copied to clipboard!');
+    }, function(err) {
+        // Fallback for older browsers
+        const textArea = document.createElement("textarea");
+        textArea.value = email;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        alert('Email copied to clipboard!');
+    });
+}
+</script>
+
 <!-- ISO 25010: Maintainability - Structured Data for Educational Portfolio -->
 <script type="application/ld+json">
 {
