@@ -71,7 +71,7 @@ DB_CHARSET=utf8mb4
 # Admin Credentials (CHANGE THESE!)
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=YourStrongPassword123!
-ADMIN_EMAIL=carpiodarryl@gmail.com
+ADMIN_EMAIL=your-email@example.com
 
 # Security Settings
 SESSION_LIFETIME=3600
