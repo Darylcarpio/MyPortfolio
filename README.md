@@ -12,14 +12,15 @@
 ## Features
 
 ### 👤 For Visitors (Public Portfolio)
+- **No Account Required** - View portfolio directly without creating an account
 - **Profile Display** - View professional information, bio, vision, and contact details
 - **Project Showcase** - Browse implemented projects with technologies used
 - **Education Timeline** - View educational background and achievements
 - **Hobbies & Interests** - Discover personal interests and skills
 - **Contact Information** - Easy access to contact channels with clickable email and Facebook links
 - **Responsive Design** - Works on desktop, tablet, and mobile devices
-- **Visitor Portal** - Public sign-in and sign-up entry for visitor accounts (24-hour session)
 - **Simplified UI** - Clean, modern interface without nested borders
+- **Perfect for Job Applications** - Employers can view portfolio easily
 
 ### 🔐 For Admin (Management Panel)
 - **Profile Management** - Edit profile information, professional title, bio, vision, and Facebook URL
@@ -120,11 +121,13 @@ MyWebsite/
 #### Option 2: Direct Browser Access
 1. Start XAMPP (Apache + MySQL)
 2. Open browser and go to:
-   - **Home:** `http://localhost/MyWebsite/`
-   - **Portfolio:** `http://localhost/MyWebsite/dashboard.php`
-   - **Admin Login:** `http://localhost/MyWebsite/admin_login.php`
+   - **Home:** `http://localhost/MyWebsite/` (Start here - redirects to portfolio)
+   - **Portfolio:** `http://localhost/MyWebsite/dashboard.php` (Direct access)
+   - **Admin Login:** `http://localhost/MyWebsite/admin_login.php` (For content management)
    - **Admin Panel:** `http://localhost/MyWebsite/panel.php`
    - **Backup/Restore:** `http://localhost/MyWebsite/FULL_BACKUP_RESTORE.php`
+
+**Note:** The portfolio is now publicly accessible without requiring visitors to create accounts. Perfect for job applications and employer viewing.
 
 ### Initial Setup
 1. **Database Initialization**
@@ -151,14 +154,15 @@ Charset: utf8mb4
 
 ## Usage Guide
 
-### For Public Users (Dashboard)
-1. **Open Dashboard:** Go to `http://localhost/MyWebsite/dashboard.php`
+### For Public Users (Viewing Portfolio)
+1. **Open Portfolio:** Go to `http://localhost/MyWebsite/` (automatically redirects to dashboard)
 2. **Browse Portfolio:**
    - Scroll through profile and introduction
    - View project showcases
    - Check education background
    - See hobbies and interests
    - Access contact information
+3. **No Account Required** - Portfolio is publicly accessible
 
 ### For Admin (Management Panel)
 
