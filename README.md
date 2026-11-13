@@ -15,8 +15,11 @@
 - **No Account Required** - View portfolio directly without creating an account
 - **Profile Display** - View professional information, bio, vision, and contact details
 - **Project Showcase** - Browse implemented projects with technologies used
+- **Project Gallery** - View multiple images per project with gallery modal
+- **Project Links** - Click to visit project URLs (GitHub, demos, etc.)
 - **Education Timeline** - View educational background and achievements
-- **Hobbies & Interests** - Discover personal interests and skills
+- **Hobbies & Interests** - Discover personal interests with proficiency bars
+- **Interactive Modal** - Click hobbies to view details with Next/Prev navigation
 - **Contact Information** - Easy access to contact channels with clickable email and Facebook links
 - **Responsive Design** - Works on desktop, tablet, and mobile devices
 - **Simplified UI** - Clean, modern interface without nested borders
@@ -24,16 +27,16 @@
 
 ### 🔐 For Admin (Management Panel)
 - **Profile Management** - Edit profile information, professional title, bio, vision, and Facebook URL
-- **Project Management** - Add, edit, delete projects with technology tags
+- **Project Management** - Add, edit, delete projects with multiple image uploads and link field
+- **Project Gallery** - Upload multiple images per project for gallery display
 - **Education Tracking** - Manage education records and achievements
-- **Hobbies & Skills** - Organize personal interests by category
+- **Hobbies & Skills** - Organize personal interests by category with proficiency levels
+- **Proficiency Bars** - Set skill levels (0-100%) with animated display on public dashboard
 - **Contact Management** - Configure contact types and information
 - **Activity Logging** - Track all system activities and changes
-- **Data Snapshots** - Backup individual sections before making changes
-- **Full System Backup** - Create complete backup of database and files
-- **System Restore** - Restore from previous backups quickly
 - **Admin Credential Management** - Access via settings icon in top bar
 - **Database Migration Tools** - Easy column addition and structure fixes
+- **Clean UI** - Removed backup/restore to simplify interface
 
 ---
 
@@ -58,15 +61,12 @@ MyWebsite/
 ├── home.php                     # Legacy redirect stub
 ├── FULL_BACKUP_RESTORE.php      # Backup & restore manager
 ├── api/                         # API endpoints
-│   ├── backup.php               # Backup creation/deletion
-│   ├── restore.php              # Restoration services
 │   ├── profile.php              # Profile data API
 │   ├── education.php            # Education API
-│   ├── projects.php             # Projects API
-│   ├── hobbies.php              # Hobbies API
+│   ├── projects.php             # Projects API (multiple images + link)
+│   ├── hobbies.php              # Hobbies API (proficiency + descriptions)
 │   ├── contact.php              # Contact info API
-│   ├── activity.php             # Activity logging API
-│   └── snapshot.php             # Section snapshots
+│   └── activity.php             # Activity logging API
 ├── CSS/                         # Stylesheets
 │   ├── style.css                # Main styles
 │   └── css_admin.css            # Admin panel styles
@@ -75,9 +75,8 @@ MyWebsite/
 │   └── security.js              # Security features
 ├── images/                      # Project images
 ├── img/                         # Media files
-│   └── projects/                # Project media
+│   └── projects/                # Project media (gallery)
 ├── audio/                       # Audio files
-├── backups/                     # Backup storage
 └── Temp/                        # Temporary files
 ```
 
@@ -88,17 +87,17 @@ MyWebsite/
 - `admin_users` - Admin credentials
 - `education` - Education records
 - `education_achievements` - Academic achievements
-- `projects` - Project portfolio
+- `projects` - Project portfolio (with link field)
 - `project_status` - Project status types
 - `project_technologies` - Technology associations
+- `project_images` - Multiple images per project (gallery)
 - `technologies` - Technology database
-- `hobby_items` - Personal interests
+- `hobby_items` - Personal interests (with proficiency_level)
 - `hobby_categories` - Interest categories
 - `contact_info` - Contact details
 - `contact_types` - Contact type definitions
 - `activity_log` - System activity tracking
 - `page_views` - Visitor statistics
-- `data_snapshots` - Section backups
 - `iso_feedback` - Feedback collection
 
 ---
@@ -116,7 +115,6 @@ MyWebsite/
 1. **First time?** Double-click `RUN.bat` to open the main menu
 2. **View portfolio?** Double-click `PORTFOLIO.bat` 
 3. **Admin access?** Double-click `ADMIN.bat`
-4. **Backup/Restore?** Double-click `BACKUP.bat` or `RESTORE.bat`
 
 #### Option 2: Direct Browser Access
 1. Start XAMPP (Apache + MySQL)
@@ -125,7 +123,6 @@ MyWebsite/
    - **Portfolio:** `http://localhost/MyWebsite/dashboard.php` (Direct access)
    - **Admin Login:** `http://localhost/MyWebsite/admin_login.php` (For content management)
    - **Admin Panel:** `http://localhost/MyWebsite/panel.php`
-   - **Backup/Restore:** `http://localhost/MyWebsite/FULL_BACKUP_RESTORE.php`
 
 **Note:** The portfolio is now publicly accessible without requiring visitors to create accounts. Perfect for job applications and employer viewing.
 
@@ -174,24 +171,23 @@ Charset: utf8mb4
 #### Managing Content
 1. **Profile:** Edit personal information, title, bio
 2. **Education:** Add degrees, institutions, years
-3. **Projects:** Create project entries with technologies
-4. **Hobbies:** Organize interests by category
+3. **Projects:** Create project entries with multiple images and optional link
+4. **Hobbies:** Organize interests by category with proficiency levels
 5. **Contact:** Update contact information
 
-#### Creating Backups
-1. Click "🔐 Backup & Restore" in admin panel
-2. Choose backup type:
-   - **Database Only** - Quick database backup
-   - **Full System** - Complete backup with files
-   - **Snapshots** - Backup single sections
-3. Download backups to safe location
+#### Managing Projects
+1. Click "Add Project" in Projects section
+2. Enter project name, description, and optional link
+3. Upload multiple images (gallery feature)
+4. Save - images display in gallery modal on public dashboard
 
-#### Restoring Data
-1. Go to "Backup & Restore" manager
-2. Click "Restore" tab
-3. Upload backup file (.zip or .sql)
-4. Confirm restoration
-5. System automatically restores all data
+#### Managing Hobbies
+1. Click "Add Hobby" in Hobbies section
+2. Select category and enter hobby name
+3. Add description (optional)
+4. Set proficiency level (0-100% slider)
+5. Upload image and optional audio
+6. Save - displays with animated proficiency bar on dashboard
 
 ---
 
@@ -200,8 +196,6 @@ Charset: utf8mb4
 | File | Purpose | Opens |
 |------|---------|-------|
 | **RUN.bat** | Main menu | http://localhost/MyWebsite/ |
-| **BACKUP.bat** | Backup interface | Backup page |
-| **RESTORE.bat** | Restore interface | Restore page |
 
 Run any batch file by double-clicking it in File Explorer.
 
@@ -215,45 +209,14 @@ Run any batch file by double-clicking it in File Explorer.
 - ✅ SQL injection prevention (Prepared statements)
 - ✅ Visitor/admin separation on the public access flow
 - ✅ 3-attempt sign-in lockout with 2-hour cooldown
-- ✅ Secure backup management
 - ✅ CSRF protection
 - ✅ Activity logging and tracking
 
 ### Best Practices
 - Always change default admin password
-- Keep backups in secure location
-- Test restore procedure regularly
-- Monitor activity logs for suspicious actions
 - Use strong passwords for admin account
-
----
-
-## Backup & Restore
-
-### Creating Backups
-**Database Only:**
-- Lightweight and fast
-- Ideal for daily backups
-- Size: 1-5 MB typically
-
-**Full System:**
-- Includes database, files, media
-- Comprehensive backup
-- Size: 50-500 MB depending on media
-
-**Section Snapshots:**
-- Individual section backups
-- Quick restore single sections
-- Used before making major changes
-
-### Restore Procedure
-1. Access "Backup & Restore" from admin panel
-2. Click "Restore" tab
-3. Select backup file (.zip or .sql)
-4. Confirm restoration
-5. System restores to selected backup point
-
-⚠️ **Warning:** Restoration overwrites current data. Always verify you have recent backups.
+- Monitor activity logs for suspicious actions
+- Keep database backups via hosting provider
 
 ---
 
@@ -287,19 +250,26 @@ Run any batch file by double-clicking it in File Explorer.
 3. Ensure PHP parsing is enabled
 4. Check error logs in XAMPP
 
-### Issue: Backup/Restore Not Working
+### Issue: Project Images Not Displaying
 **Solution:**
-1. Ensure `/backups` folder exists (writable)
-2. Check disk space available
-3. Verify database permissions
-4. Try creating new backup first
+1. Ensure `/img/projects/` folder exists and is writable
+2. Check file permissions (755 or 777)
+3. Verify image files were uploaded correctly
+4. Check browser console for image loading errors
+
+### Issue: Hobby Proficiency Not Working
+**Solution:**
+1. Verify `proficiency_level` column exists in `hobby_items` table
+2. Run migration script if column is missing
+3. Check database connection in `config.php`
+4. Clear browser cache and refresh
 
 ---
 
 ## File Permissions
 
 For proper functionality, ensure:
-- `/backups/` folder is writable (755)
+- `/img/projects/` folder is writable (755)
 - `/Temp/` folder is writable (755)
 - Database can read/write tables
 - Upload folders have appropriate permissions
@@ -314,25 +284,24 @@ Folders typically have correct permissions by default. If issues occur:
 
 ## API Endpoints Reference
 
-### Backup API (`api/backup.php`)
-- `GET ?action=full-backup` - Create database backup
-- `GET ?action=full-backup-with-files` - Full system backup
-- `POST action=restore` - Restore from backup
-- `GET ?action=delete&file=filename` - Delete backup
-
 ### Profile API (`api/profile.php`)
 - `GET` - Retrieve profile data
 - `POST` - Update profile
 
 ### Projects API (`api/projects.php`)
-- `GET` - List all projects
-- `POST` - Add new project
-- `PUT` - Update project
+- `GET` - List all projects with images
+- `POST` - Add new project (supports multiple images + link)
+- `PUT` - Update project (preserves existing images/link)
 - `DELETE` - Remove project
+
+### Hobbies API (`api/hobbies.php`)
+- `GET` - List all hobbies with proficiency
+- `POST` - Add new hobby (with proficiency + description)
+- `PUT` - Update hobby details
+- `DELETE` - Remove hobby
 
 ### Other APIs
 - `education.php` - Education management
-- `hobbies.php` - Hobbies management
 - `contact.php` - Contact information
 - `activity.php` - Activity logging
 
@@ -342,28 +311,26 @@ Folders typically have correct permissions by default. If issues occur:
 
 1. **Optimize Images** - Keep project images under 500KB
 2. **Database Cleanup** - Archive old activity logs quarterly
-3. **Backup Management** - Delete old backups to save space
-4. **Browser Caching** - Leverages CSS/JS caching
-5. **CDN Ready** - Can integrate CDN for static assets
+3. **Browser Caching** - Leverages CSS/JS caching
+4. **CDN Ready** - Can integrate CDN for static assets
+5. **Image Optimization** - Compress images before upload
 
 ---
 
 ## Support & Maintenance
 
 ### Regular Maintenance
-- Test backup/restore monthly
 - Review activity logs weekly
 - Update project information as needed
-- Verify backup integrity periodically
+- Verify image uploads are working
+- Test admin panel functionality monthly
 
 ### Common Maintenance Tasks
 1. **Change Admin Password**
-   - Admin Panel → Account Settings
-2. **Backup System**
-   - Admin Panel → Backup & Restore → Create Backup
-3. **View Activity**
+   - Admin Panel → Settings (gear icon) → Change Password
+2. **View Activity**
    - Admin Panel → Activity Log
-4. **Check Statistics**
+3. **Check Statistics**
    - Dashboard → Page views, visitor info
 
 ---
@@ -380,7 +347,7 @@ Folders typically have correct permissions by default. If issues occur:
 2. Create API endpoint in `/api/`
 3. Update admin panel in `panel.php`
 4. Add dashboard display in `dashboard.php`
-5. Test with backup/restore
+5. Test on localhost before deploying
 
 ### Extending the System
 The modular architecture allows easy extension:
@@ -395,8 +362,8 @@ The modular architecture allows easy extension:
 
 ## Version Information
 
-- **System Version:** 2.0
-- **Release Date:** April 2026
+- **System Version:** 2.2
+- **Release Date:** October 2026
 - **PHP Version:** 7.x+
 - **MySQL Version:** 5.7+
 - **Database:** db_portfolio
@@ -414,6 +381,22 @@ This portfolio system is designed to showcase professional work in web developme
 ---
 
 ## Changelog
+
+### Version 2.2 (October 2026)
+- ✅ Enhanced hobbies module with proficiency bars (0-100%)
+- ✅ Added animated proficiency bar display on public dashboard
+- ✅ Implemented hobby modal with Next/Prev navigation
+- ✅ Added custom toast notifications for empty categories
+- ✅ Implemented project image gallery (multiple images per project)
+- ✅ Added project gallery modal with image navigation
+- ✅ Added optional project link field
+- ✅ Fixed project image preservation on edit
+- ✅ Fixed project link preservation on edit
+- ✅ Removed backup/restore functionality for simpler UI
+- ✅ Added project_images database table
+- ✅ Updated database schema for proficiency_level column
+- ✅ Enhanced admin panel with cleaner interface
+- ✅ Improved image upload handling for projects
 
 ### Version 2.1 (October 2026)
 - ✅ Added Facebook URL field to profile
@@ -446,7 +429,6 @@ This portfolio system is designed to showcase professional work in web developme
 | Dashboard | http://localhost/MyWebsite/dashboard.php |
 | Admin Login | http://localhost/MyWebsite/admin_login.php |
 | Admin Panel | http://localhost/MyWebsite/panel.php |
-| Backup/Restore | http://localhost/MyWebsite/FULL_BACKUP_RESTORE.php |
 
 ### Configuration Reference
 | Item | Notes |
@@ -456,12 +438,10 @@ This portfolio system is designed to showcase professional work in web developme
 | Database Name | `db_portfolio` |
 | Session Lifetime | 3600 seconds (1 hour) |
 
-### Files
+### Batch Files
 | Batch | Purpose |
 |-------|---------|
 | RUN.bat | Main Menu |
-| BACKUP.bat | Backup Manager |
-| RESTORE.bat | Restore Manager |
 
 ---
 
@@ -474,5 +454,5 @@ For questions or issues with the portfolio system, contact:
 
 ---
 
-**Last Updated:** April 20, 2026  
+**Last Updated:** October 12, 2026  
 **Status:** Production Ready ✅
