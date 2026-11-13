@@ -355,7 +355,143 @@ function groupHobbiesByCategory($hobbies_data) {
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
+
+        .project-link-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102,126,234,0.3);
+        }
+
+        .project-link-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102,126,234,0.5);
+        }
+
+        /* Project Gallery Modal */
+        .project-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .project-modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .project-modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            max-width: 900px;
+            max-height: 90%;
+            overflow-y: auto;
+            padding: 0;
+            position: relative;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: row;
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .project-modal.active .project-modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .project-modal-left {
+            width: 60%;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.2);
+        }
+
+        .project-modal-image {
+            width: 100%;
+            max-height: 500px;
+            object-fit: contain;
+            border-radius: 12px;
+            transition: opacity 0.2s ease;
+        }
+
+        .project-modal-right {
+            width: 40%;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            background: rgba(26,26,46,0.5);
+        }
+
+        .project-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .project-modal-close:hover {
+            background: rgba(255,255,255,0.2);
+            transform: rotate(90deg);
+        }
+
+        .project-modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 15px;
+            margin-top: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .project-modal-description {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1.6;
+            flex: 1;
+            overflow-y: auto;
+            max-height: 300px;
+            padding-right: 10px;
+            transition: opacity 0.2s ease;
+            text-align: justify;
+        }
+
+        .project-modal-nav {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+
         .project-card {
             background: var(--card-bg);
             border: 1px solid var(--border);
@@ -365,7 +501,7 @@ function groupHobbiesByCategory($hobbies_data) {
             box-shadow: 0 15px 35px rgba(0,0,0,0.2);
             transition: all 0.3s ease;
         }
-        
+
         .project-card-link:hover .project-card {
             transform: translateY(-10px);
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
@@ -927,34 +1063,40 @@ function groupHobbiesByCategory($hobbies_data) {
         if (!empty($db_projects)):
         ?>
         <div class="projects-grid">
-            <?php foreach ($db_projects as $p): 
-                // Build proper image path
+            <?php
+            // Store project data for modal
+            $projectDataJson = json_encode($db_projects, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+            ?>
+            <script>const projectDataFromServer = <?php echo $projectDataJson; ?>;</script>
+            <?php foreach ($db_projects as $p):
+                // Use first image from images array
                 $imgSrc = '';
-                if (!empty($p['image'])) {
-                    // Check if image path already includes folder or needs it
-                    if (strpos($p['image'], '/') === false) {
-                        $imgSrc = 'img/projects/' . htmlspecialchars($p['image']);
-                    } else {
-                        $imgSrc = htmlspecialchars($p['image']);
-                    }
+                if (!empty($p['images']) && is_array($p['images']) && count($p['images']) > 0) {
+                    $imgSrc = htmlspecialchars($p['images'][0]);
                 }
                 $placeholder = 'https://via.placeholder.com/300x180/2a2a4a/ffffff?text=' . urlencode(htmlspecialchars($p['title']));
-                $projectLink = !empty($p['project_url']) ? htmlspecialchars($p['project_url']) : (!empty($p['link']) ? htmlspecialchars($p['link']) : '#');
+                $projectLink = !empty($p['link']) ? htmlspecialchars($p['link']) : '#';
+                $hasLink = !empty($p['link']);
+                $hasImages = !empty($p['images']) && is_array($p['images']) && count($p['images']) > 0;
             ?>
-            <a href="<?php echo $projectLink; ?>" class="project-card-link" <?php echo ($projectLink !== '#') ? 'target="_blank" rel="noopener noreferrer"' : 'onclick="return false;"'; ?>>
-                <article class="project-card">
-                    <img src="<?php echo !empty($imgSrc) ? $imgSrc : $placeholder; ?>" 
-                         alt="Project: <?php echo htmlspecialchars($p['title']); ?>" 
-                         class="project-image" 
-                         loading="lazy"
-                         decoding="async"
-                         onerror="this.src='<?php echo $placeholder; ?>'">
-                    <div class="project-content">
-                        <h3 class="project-title"><?php echo htmlspecialchars($p['title']); ?></h3>
-                        <p class="project-description"><?php echo htmlspecialchars($p['description']); ?></p>
-                    </div>
-                </article>
-            </a>
+            <article class="project-card" data-project-id="<?php echo htmlspecialchars($p['id']); ?>" data-has-images="<?php echo $hasImages ? 'true' : 'false'; ?>" style="cursor: <?php echo $hasImages ? 'pointer' : 'default'; ?>;">
+                <img src="<?php echo !empty($imgSrc) ? $imgSrc : $placeholder; ?>"
+                     alt="Project: <?php echo htmlspecialchars($p['title']); ?>"
+                     class="project-image"
+                     loading="lazy"
+                     decoding="async"
+                     onerror="this.src='<?php echo $placeholder; ?>'">
+                <div class="project-content">
+                    <h3 class="project-title"><?php echo htmlspecialchars($p['title']); ?></h3>
+                    <p class="project-description"><?php echo htmlspecialchars($p['description']); ?></p>
+                    <?php if ($hasImages && count($p['images']) > 1): ?>
+                    <small style="color: var(--text-secondary); margin-bottom: 8px; display: block;"><?php echo count($p['images']); ?> images - click to view gallery</small>
+                    <?php endif; ?>
+                    <?php if ($hasLink): ?>
+                    <a href="<?php echo $projectLink; ?>" target="_blank" rel="noopener noreferrer" class="project-link-btn">View Project →</a>
+                    <?php endif; ?>
+                </div>
+            </article>
             <?php endforeach; ?>
         </div>
         <?php else: ?>
@@ -963,6 +1105,32 @@ function groupHobbiesByCategory($hobbies_data) {
         </div>
         <?php endif; ?>
     </section>
+
+    <!-- PROJECT GALLERY MODAL -->
+    <div id="projectModal" class="project-modal">
+        <div class="project-modal-content">
+            <!-- Left: Image Panel -->
+            <div class="project-modal-left">
+                <img id="projectModalImage" src="" alt="Project Image" class="project-modal-image">
+            </div>
+
+            <!-- Right: Content Panel -->
+            <div class="project-modal-right">
+                <button class="project-modal-close" onclick="closeProjectModal()">✕</button>
+                <h3 id="projectModalTitle" class="project-modal-title"></h3>
+                <p id="projectModalDescription" class="project-modal-description"></p>
+
+                <!-- Navigation Buttons -->
+                <div class="project-modal-nav">
+                    <button class="nav-btn nav-prev" onclick="navigateProjectImage(-1)">← Previous</button>
+                    <button class="nav-btn nav-next" onclick="navigateProjectImage(1)">Next →</button>
+                </div>
+
+                <!-- External Link Button -->
+                <a id="projectModalLink" href="#" target="_blank" rel="noopener noreferrer" class="project-link-btn" style="display: none;">View Project →</a>
+            </div>
+        </div>
+    </div>
 
     <!-- CONTACT SECTION - ISO 25010: Usability -->
     <section id="contact" aria-label="Contact Information Section">
@@ -1290,6 +1458,97 @@ function showToast(message) {
     setTimeout(() => {
         toast.classList.remove('show');
     }, 1500);
+}
+
+// Project Gallery Modal Functions
+let projectImages = [];
+let currentProjectImageIndex = 0;
+
+// Event delegation for project cards
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.project-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const hasImages = this.getAttribute('data-has-images') === 'true';
+            if (!hasImages) return;
+
+            const projectId = this.getAttribute('data-project-id');
+            const title = this.querySelector('.project-title').textContent;
+            const description = this.querySelector('.project-description').textContent;
+            const linkBtn = this.querySelector('.project-link-btn');
+            const link = linkBtn ? linkBtn.href : '#';
+
+            // Get images from the projects data
+            const projectData = projectDataFromServer.find(p => p.id == projectId);
+            if (projectData && projectData.images) {
+                openProjectModal(projectId, projectData.images, title, description, link);
+            }
+        });
+    });
+});
+
+function openProjectModal(projectId, images, title, description, link) {
+    const modal = document.getElementById('projectModal');
+    const modalImage = document.getElementById('projectModalImage');
+    const modalTitle = document.getElementById('projectModalTitle');
+    const modalDescription = document.getElementById('projectModalDescription');
+    const modalLink = document.getElementById('projectModalLink');
+
+    projectImages = images || [];
+    currentProjectImageIndex = 0;
+
+    if (projectImages.length === 0) {
+        showToast('No images for this project');
+        return;
+    }
+
+    modalImage.src = projectImages[0];
+    modalTitle.textContent = title;
+    modalDescription.textContent = description || 'No description available';
+
+    if (link && link !== '#') {
+        modalLink.href = link;
+        modalLink.style.display = 'inline-block';
+    } else {
+        modalLink.style.display = 'none';
+    }
+
+    updateProjectNavButtons();
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeProjectModal() {
+    const modal = document.getElementById('projectModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function navigateProjectImage(direction) {
+    const newIndex = currentProjectImageIndex + direction;
+
+    if (newIndex < 0 || newIndex >= projectImages.length) return;
+
+    const modalImage = document.getElementById('projectModalImage');
+
+    // Fade out
+    modalImage.style.opacity = '0';
+
+    setTimeout(() => {
+        currentProjectImageIndex = newIndex;
+        modalImage.src = projectImages[newIndex];
+        updateProjectNavButtons();
+
+        // Fade in
+        modalImage.style.opacity = '1';
+    }, 200);
+}
+
+function updateProjectNavButtons() {
+    const prevBtn = document.querySelector('.project-modal-nav .nav-prev');
+    const nextBtn = document.querySelector('.project-modal-nav .nav-next');
+
+    prevBtn.disabled = currentProjectImageIndex <= 0;
+    nextBtn.disabled = currentProjectImageIndex >= projectImages.length - 1;
 }
 </script>
 

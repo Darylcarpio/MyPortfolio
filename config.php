@@ -264,19 +264,36 @@ class PortfolioDAL {
     // ===== PROJECTS METHODS =====
     public function getProjects() {
         $sql = "SELECT p.*, ps.status_name,
-                        GROUP_CONCAT(DISTINCT t.tech_name SEPARATOR '|') as technologies 
-                FROM projects p 
+                        GROUP_CONCAT(DISTINCT t.tech_name SEPARATOR '|') as technologies
+                FROM projects p
                 LEFT JOIN project_status ps ON p.status_id = ps.id
                 LEFT JOIN project_technologies pt ON p.id = pt.project_id
                 LEFT JOIN technologies t ON pt.technology_id = t.id
-                GROUP BY p.id 
+                GROUP BY p.id
                 ORDER BY p.sort_order";
-        return $this->db->fetchAll($sql);
+
+        $projects = $this->db->fetchAll($sql);
+
+        // Add images to each project
+        foreach ($projects as &$project) {
+            $images = $this->db->fetchAll("SELECT image_path FROM project_images WHERE project_id = ? ORDER BY sort_order", [$project['id']]);
+            $project['images'] = array_column($images, 'image_path');
+        }
+
+        return $projects;
     }
     
     public function addProject($data) {
-        $sql = "INSERT INTO projects (title, description, image, status_id, sort_order) VALUES (?, ?, ?, ?, ?)";
-        $id = $this->db->insert($sql, [$data['title'], $data['description'], $data['image'], $data['status_id'], $data['sort_order']]);
+        $sql = "INSERT INTO projects (title, description, link, status_id, sort_order) VALUES (?, ?, ?, ?, ?)";
+        $id = $this->db->insert($sql, [$data['title'], $data['description'], $data['link'] ?? '', $data['status_id'], $data['sort_order']]);
+
+        // Add images to project_images table
+        if (!empty($data['images']) && is_array($data['images'])) {
+            foreach ($data['images'] as $sort => $imagePath) {
+                $this->db->insert("INSERT INTO project_images (project_id, image_path, sort_order) VALUES (?, ?, ?)",
+                    [$id, $imagePath, $sort]);
+            }
+        }
         
         // Add technologies if provided
         if (!empty($data['technologies'])) {
@@ -297,8 +314,18 @@ class PortfolioDAL {
     }
     
     public function updateProject($id, $data) {
-        $sql = "UPDATE projects SET title = ?, description = ?, image = ?, status_id = ?, sort_order = ? WHERE id = ?";
-        $this->db->update($sql, [$data['title'], $data['description'], $data['image'], $data['status_id'], $data['sort_order'], $id]);
+        $sql = "UPDATE projects SET title = ?, description = ?, link = ?, status_id = ?, sort_order = ? WHERE id = ?";
+        $this->db->update($sql, [$data['title'], $data['description'], $data['link'] ?? '', $data['status_id'], $data['sort_order'], $id]);
+
+        // Delete existing images and add new ones
+        $this->db->delete("DELETE FROM project_images WHERE project_id = ?", [$id]);
+
+        if (!empty($data['images']) && is_array($data['images'])) {
+            foreach ($data['images'] as $sort => $imagePath) {
+                $this->db->insert("INSERT INTO project_images (project_id, image_path, sort_order) VALUES (?, ?, ?)",
+                    [$id, $imagePath, $sort]);
+            }
+        }
         
         // Update technologies
         $this->db->delete("DELETE FROM project_technologies WHERE project_id = ?", [$id]);

@@ -119,6 +119,8 @@ $projects_data = array_map(function($proj) {
         'title' => $proj['title'],
         'description' => $proj['description'],
         'image' => $proj['image'] ?? '',
+        'link' => $proj['link'] ?? '',
+        'images' => $proj['images'] ?? [],
         'technologies' => !empty($proj['technologies']) ? explode('|', $proj['technologies']) : [],
         'status' => $proj['status_name'] ?? 'Pending',
         'status_id' => $proj['status_id'] ?? 1
@@ -1709,16 +1711,14 @@ $page_view_count = $dal->getPageViewCount('dashboard');
             <input type="hidden" id="projIdx">
             <div class="fg-row"><label>Project Name</label><input type="text" class="fc" id="projTitle" placeholder="Project name"></div>
             <div class="fg-row"><label>Description</label><textarea class="fc" id="projDesc" rows="3" placeholder="Project description"></textarea></div>
+            <div class="fg-row"><label>Project Link (optional)</label><input type="url" class="fc" id="projLink" placeholder="https://github.com/your-username/project" pattern="https?://.*"></div>
             <div class="fg-row">
-                <label>Upload Image</label>
+                <label>Upload Images (multiple)</label>
                 <div style="position:relative;">
-                    <input type="file" id="projImage" accept="*/*" style="display:none;" onchange="previewProjImg(this)">
-                    <button type="button" onclick="document.getElementById('projImage').click()" style="width:100%;padding:12px 16px;font-size:.95rem;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s ease;box-shadow:0 4px 15px rgba(102,126,234,.4);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(102,126,234,.6)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 15px rgba(102,126,234,.4)'">📤 Choose File <span style="background:rgba(255,255,255,.2);padding:2px 10px;border-radius:12px;font-size:.8rem;">max 30MB</span></button>
+                    <input type="file" id="projImages" accept="image/*" multiple style="display:none;" onchange="previewProjImages(this)">
+                    <button type="button" onclick="document.getElementById('projImages').click()" style="width:100%;padding:12px 16px;font-size:.95rem;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s ease;box-shadow:0 4px 15px rgba(102,126,234,.4);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(102,126,234,.6)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 15px rgba(102,126,234,.4)'">📤 Choose Images <span style="background:rgba(255,255,255,.2);padding:2px 10px;border-radius:12px;font-size:.8rem;">max 30MB each</span></button>
                 </div>
-                <div id="projImagePreview" style="margin-top:10px;display:none;position:relative;">
-                    <img id="projImageThumb" style="max-width:100%;max-height:160px;border-radius:8px;display:block;" />
-                    <button type="button" onclick="clearProjImg()" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);color:#fff;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:.8rem;">✕</button>
-                </div>
+                <div id="projImagesPreview" style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:10px;"></div>
             </div>
             <div class="mfoot">
                 <button type="button" class="btn btn-g" onclick="closeModal('moProj')">Cancel</button>
@@ -2462,7 +2462,7 @@ function renderProj() {
     if (!proj.length) { c.innerHTML = '<p style="color:var(--muted);text-align:center;padding:16px;grid-column:1/-1;">No projects yet.</p>'; return; }
     c.innerHTML = proj.map((p, i) => {
         const placeholder = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 225'%3E%3Crect fill='%2316162e' width='400' height='225'/%3E%3Ctext x='50%25' y='50%25' font-size='18' fill='%235a6fb8' text-anchor='middle' dy='.3em'%3E📁 No Image%3C/text%3E%3C/svg%3E`;
-        const imgSrc = p.image ? p.image : placeholder;
+        const imgSrc = (p.images && p.images.length > 0) ? p.images[0] : placeholder;
         return `<div class="ci" style="border-radius:12px;overflow:hidden;">
             <div style="width:100%;height:160px;background:#16162e;overflow:hidden;">
                 <img src="${imgSrc}" style="width:100%;height:100%;object-fit:cover;" onerror="this.src='${placeholder}'" />
@@ -2476,6 +2476,7 @@ function renderProj() {
                 </div>
                 <div class="ci-title">${p.title}</div>
                 <div class="ci-desc">${p.description}</div>
+                ${p.link ? `<small style="color:var(--highlight);"><a href="${p.link}" target="_blank" style="color:inherit;text-decoration:none;">🔗 ${p.link}</a></small>` : ''}
             </div>
         </div>`;
     }).join('');
@@ -2502,18 +2503,75 @@ function clearProjImg() {
     document.getElementById('projImagePreview').style.display = 'none';
 }
 
+function previewProjImages(input) {
+    const previewContainer = document.getElementById('projImagesPreview');
+    previewContainer.innerHTML = '';
+
+    Array.from(input.files).forEach((file, index) => {
+        if (file.size > 30 * 1024 * 1024) {
+            showToast('File exceeds 30MB limit!');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            addImagePreview(e.target.result, index, true);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function addImagePreview(src, index, isNew = false) {
+    const previewContainer = document.getElementById('projImagesPreview');
+    const div = document.createElement('div');
+    div.style.position = 'relative';
+    div.style.aspectRatio = '1';
+    div.style.borderRadius = '8px';
+    div.style.overflow = 'hidden';
+    div.style.border = '2px solid var(--border)';
+    div.dataset.imageSrc = src; // Store image path for tracking
+
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'cover';
+
+    const removeBtn = document.createElement('button');
+    removeBtn.innerHTML = '✕';
+    removeBtn.style.position = 'absolute';
+    removeBtn.style.top = '4px';
+    removeBtn.style.right = '4px';
+    removeBtn.style.background = 'rgba(0,0,0,0.7)';
+    removeBtn.style.color = '#fff';
+    removeBtn.style.border = 'none';
+    removeBtn.style.borderRadius = '50%';
+    removeBtn.style.width = '24px';
+    removeBtn.style.height = '24px';
+    removeBtn.style.cursor = 'pointer';
+    removeBtn.style.fontSize = '0.8rem';
+    removeBtn.onclick = function() {
+        div.remove();
+    };
+
+    div.appendChild(img);
+    div.appendChild(removeBtn);
+    previewContainer.appendChild(div);
+}
+
 function openProjModal(i) {
     document.getElementById('projMTitle').textContent = i == null ? 'Add Project' : 'Edit Project';
     document.getElementById('projIdx').value = i == null ? '' : i;
     const p = i == null ? {} : proj[i];
     document.getElementById('projTitle').value = p.title || '';
     document.getElementById('projDesc').value  = p.description || '';
-    document.getElementById('projImage').value = '';
-    if (i != null && p.image) {
-        document.getElementById('projImageThumb').src = p.image;
-        document.getElementById('projImagePreview').style.display = 'block';
-    } else {
-        document.getElementById('projImagePreview').style.display = 'none';
+    document.getElementById('projLink').value = p.link || '';
+    document.getElementById('projImages').value = '';
+    document.getElementById('projImagesPreview').innerHTML = '';
+    if (i != null && p.images && p.images.length > 0) {
+        p.images.forEach((img, idx) => {
+            addImagePreview(img, idx);
+        });
     }
     openModal('moProj');
 }
@@ -2524,23 +2582,40 @@ function saveProj() {
     const idx = document.getElementById('projIdx').value;
     const title = document.getElementById('projTitle').value;
     const description = document.getElementById('projDesc').value;
-    const imageFile = document.getElementById('projImage').files[0];
+    const link = document.getElementById('projLink').value;
+    const imageFiles = document.getElementById('projImages').files;
     
     if (!title) {
         showToast('Title is required!');
         return;
     }
-    
-    const maxSize = 30 * 1024 * 1024; // 30MB
-    if (imageFile && imageFile.size > maxSize) {
-        showToast('File exceeds 30MB limit! Selected: ' + (imageFile.size / 1024 / 1024).toFixed(1) + 'MB');
-        return;
+
+    const maxSize = 30 * 1024 * 1024; // 30MB per file
+    for (let i = 0; i < imageFiles.length; i++) {
+        if (imageFiles[i].size > maxSize) {
+            showToast('File exceeds 30MB limit!');
+            return;
+        }
     }
-    
+
     const formData = new FormData();
     formData.append('title', title);
     formData.append('description', description);
-    if (imageFile) formData.append('image', imageFile);
+    formData.append('link', link);
+
+    // Collect image paths from preview (for existing images that weren't re-uploaded)
+    const previewContainer = document.getElementById('projImagesPreview');
+    const existingImagePaths = [];
+    previewContainer.querySelectorAll('div[data-image-src]').forEach(div => {
+        existingImagePaths.push(div.dataset.imageSrc);
+    });
+    console.log('Existing images to keep:', existingImagePaths);
+    console.log('New image files:', imageFiles.length);
+    formData.append('existing_images', JSON.stringify(existingImagePaths));
+
+    for (let i = 0; i < imageFiles.length; i++) {
+        formData.append('images[]', imageFiles[i]);
+    }
     
     const action = idx === '' ? 'add' : 'update';
     formData.append('action', action);
