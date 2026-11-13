@@ -1,7 +1,7 @@
 <?php
 /**
- * Admin Credential Management
- * Allow admin to change username and password
+ * Change Admin Password
+ * Allow admin to change password only
  */
 
 session_start();
@@ -21,8 +21,7 @@ $success_message = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $action = $_POST['action'] ?? '';
 
-    if ($action == 'update_credentials') {
-        $new_username = trim($_POST['new_username'] ?? '');
+    if ($action == 'change_password') {
         $new_password = $_POST['new_password'] ?? '';
         $confirm_password = $_POST['confirm_password'] ?? '';
         $current_password = $_POST['current_password'] ?? '';
@@ -34,74 +33,43 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         if (!$admin || !password_verify($current_password, $admin['password_hash'])) {
             $error_message = 'Current password is incorrect';
+        } elseif (empty($new_password)) {
+            $error_message = 'Please enter a new password';
+        } elseif (strlen($new_password) < 8) {
+            $error_message = 'Password must be at least 8 characters';
+        } elseif (!preg_match('/[A-Z]/', $new_password)) {
+            $error_message = 'Password must contain at least 1 uppercase letter';
+        } elseif (!preg_match('/[a-z]/', $new_password)) {
+            $error_message = 'Password must contain at least 1 lowercase letter';
+        } elseif (!preg_match('/[0-9]/', $new_password)) {
+            $error_message = 'Password must contain at least 1 number';
+        } elseif (empty($confirm_password)) {
+            $error_message = 'Please confirm your new password';
+        } elseif ($new_password !== $confirm_password) {
+            $error_message = 'Passwords do not match';
         } else {
-            // Validate new password if provided
-            if (!empty($new_password)) {
-                // Password criteria: at least 8 characters, at least 1 uppercase, 1 lowercase, 1 number
-                if (strlen($new_password) < 8) {
-                    $error_message = 'Password must be at least 8 characters';
-                } elseif (!preg_match('/[A-Z]/', $new_password)) {
-                    $error_message = 'Password must contain at least 1 uppercase letter';
-                } elseif (!preg_match('/[a-z]/', $new_password)) {
-                    $error_message = 'Password must contain at least 1 lowercase letter';
-                } elseif (!preg_match('/[0-9]/', $new_password)) {
-                    $error_message = 'Password must contain at least 1 number';
-                } elseif ($new_password !== $confirm_password) {
-                    $error_message = 'Passwords do not match';
-                } else {
-                    // Update password
-                    $password_hash = password_hash($new_password, PASSWORD_BCRYPT);
-                    $stmt = $conn->prepare("UPDATE admin_users SET password_hash = ? WHERE id = ?");
-                    $stmt->execute([$password_hash, $_SESSION['admin_id']]);
+            // Update password
+            $password_hash = password_hash($new_password, PASSWORD_BCRYPT);
+            $stmt = $conn->prepare("UPDATE admin_users SET password_hash = ? WHERE id = ?");
+            $stmt->execute([$password_hash, $_SESSION['admin_id']]);
+            $success_message = 'Password updated successfully! You will be logged out in 3 seconds...';
 
-                    if (!empty($new_username)) {
-                        // Also update username if provided
-                        $stmt = $conn->prepare("UPDATE admin_users SET username = ? WHERE id = ?");
-                        $stmt->execute([$new_username, $_SESSION['admin_id']]);
-                        $_SESSION['admin_user'] = $new_username;
-                        $success_message = 'Username and password updated successfully! You will be logged out in 3 seconds...';
-                    } else {
-                        $success_message = 'Password updated successfully! You will be logged out in 3 seconds...';
-                    }
-
-                    // Auto logout after successful credential change
-                    echo '<script>
-                    setTimeout(function() {
-                        window.location.href = "logout.php";
-                    }, 3000);
-                    </script>';
-                }
-            } elseif (!empty($new_username)) {
-                // Only update username
-                $stmt = $conn->prepare("UPDATE admin_users SET username = ? WHERE id = ?");
-                $stmt->execute([$new_username, $_SESSION['admin_id']]);
-                $_SESSION['admin_user'] = $new_username;
-                $success_message = 'Username updated successfully! You will be logged out in 3 seconds...';
-
-                // Auto logout after successful credential change
-                echo '<script>
-                setTimeout(function() {
-                    window.location.href = "logout.php";
-                }, 3000);
-                </script>';
-            } else {
-                $error_message = 'Please enter a new username or password';
-            }
+            // Auto logout after successful credential change
+            echo '<script>
+            setTimeout(function() {
+                window.location.href = "logout.php";
+            }, 3000);
+            </script>';
         }
     }
 }
-
-// Get current admin info
-$stmt = $conn->prepare("SELECT username, email FROM admin_users WHERE id = ?");
-$stmt->execute([$_SESSION['admin_id']]);
-$admin = $stmt->fetch(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Admin Account - BDC World</title>
+    <title>Change Password - BDC World</title>
     <style>
         * {
             margin: 0;
@@ -146,22 +114,6 @@ $admin = $stmt->fetch(PDO::FETCH_ASSOC);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-        }
-
-        .current-info {
-            background: rgba(255,255,255,0.08);
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-        }
-
-        .current-info p {
-            margin: 8px 0;
-            font-size: 0.95rem;
-        }
-
-        .current-info strong {
-            color: #667eea;
         }
 
         .form-group {
@@ -260,8 +212,8 @@ $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 <body>
     <div class="manage-container">
         <div class="logo-section">
-            <h1>Manage Admin Account</h1>
-            <p>Update your username and password</p>
+            <h1>Change Password</h1>
+            <p>Update your admin password</p>
         </div>
 
         <?php if ($error_message): ?>
@@ -277,7 +229,7 @@ $admin = $stmt->fetch(PDO::FETCH_ASSOC);
         <?php endif; ?>
 
         <form method="POST">
-            <input type="hidden" name="action" value="update_credentials">
+            <input type="hidden" name="action" value="change_password">
 
             <div class="form-group">
                 <label for="current_password">Current Password</label>
@@ -291,23 +243,13 @@ $admin = $stmt->fetch(PDO::FETCH_ASSOC);
             </div>
 
             <div class="form-group">
-                <label for="new_username">New Username</label>
-                <input
-                    type="text"
-                    id="new_username"
-                    name="new_username"
-                    placeholder="Leave blank to keep current username"
-                >
-                <small style="color: rgba(248, 250, 252, 0.6); font-size: 0.8rem;">Username must be unique. Letters, numbers, and spaces allowed.</small>
-            </div>
-
-            <div class="form-group">
                 <label for="new_password">New Password</label>
                 <input
                     type="password"
                     id="new_password"
                     name="new_password"
-                    placeholder="Leave blank to keep current password"
+                    placeholder="Enter new password"
+                    required
                 >
                 <small style="color: rgba(248, 250, 252, 0.6); font-size: 0.8rem;">Minimum 8 characters, 1 uppercase, 1 lowercase, 1 number</small>
             </div>
@@ -319,10 +261,11 @@ $admin = $stmt->fetch(PDO::FETCH_ASSOC);
                     id="confirm_password"
                     name="confirm_password"
                     placeholder="Re-enter new password"
+                    required
                 >
             </div>
 
-            <button type="submit" class="btn-submit">Update Credentials</button>
+            <button type="submit" class="btn-submit">Change Password</button>
         </form>
 
         <a href="panel.php" class="btn-back">← Back to Admin Panel</a>

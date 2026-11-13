@@ -91,7 +91,9 @@ foreach ($hobbies_raw as $hobby) {
         $hobbies_data[$cat_key]['items'][] = [
             'id' => $hobby['item_id'],
             'name' => $hobby['item_name'],
-            'image' => $hobby['image']
+            'image' => $hobby['image'],
+            'description' => $hobby['description'] ?? '',
+            'proficiency' => $hobby['proficiency_level'] ?? 0
         ];
     }
 }
@@ -425,6 +427,48 @@ $page_view_count = $dal->getPageViewCount('dashboard');
         border-color: rgba(102,126,234,0.3);
         color: var(--accent);
         transform: rotate(45deg);
+    }
+
+    .settings-dropdown {
+        position: relative;
+    }
+
+    .settings-menu {
+        display: none;
+        position: absolute;
+        top: 45px;
+        right: 0;
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 12px;
+        min-width: 200px;
+        backdrop-filter: blur(14px);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        z-index: 1000;
+        overflow: hidden;
+    }
+
+    .settings-menu.show {
+        display: block;
+    }
+
+    .settings-menu-item {
+        display: block;
+        padding: 12px 16px;
+        color: #f8fafc;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .settings-menu-item:last-child {
+        border-bottom: none;
+    }
+
+    .settings-menu-item:hover {
+        background: rgba(102,126,234,0.15);
+        color: var(--accent);
     }
 
     /* ─── HAMBURGER MENU (Mobile) ─────────────── */
@@ -1247,9 +1291,15 @@ $page_view_count = $dal->getPageViewCount('dashboard');
             <?= $admin_user ?>
         </div>
         <div class="tb-session">Session: <strong><?= $elapsed_str ?></strong></div>
-        <button class="tb-settings" onclick="window.location.href='admin_manage.php'" title="Manage Admin Account">
-            ⚙️
-        </button>
+        <div class="settings-dropdown">
+            <button class="tb-settings" onclick="toggleSettingsMenu()" title="Account Settings">
+                ⚙️
+            </button>
+            <div class="settings-menu" id="settingsMenu">
+                <a href="admin_change_username.php" class="settings-menu-item">Change Username</a>
+                <a href="admin_change_password.php" class="settings-menu-item">Change Password</a>
+            </div>
+        </div>
     </div>
 </header>
 
@@ -1334,10 +1384,6 @@ $page_view_count = $dal->getPageViewCount('dashboard');
             <button class="qb" onclick="goTo('projects',null)">
                 <div class="qb-ico">💻</div>
                 Projects
-            </button>
-            <button class="qb" onclick="window.location.href='FULL_BACKUP_RESTORE.php'" style="border: 2px solid #dc3545; background: rgba(220, 53, 69, 0.05);">
-                <div class="qb-ico">🔐</div>
-                Backup & Restore
             </button>
         </div>
     </div>
@@ -1429,10 +1475,7 @@ $page_view_count = $dal->getPageViewCount('dashboard');
                 <div class="card-t-ico">👤</div>
                 <h2>Personal Information</h2>
             </div>
-            <div style="display:flex;gap:8px;">
-                <button class="btn btn-e btn-sm" onclick="backupSection('profile')" title="Save current profile as backup">📦 Backup</button>
-                <button class="btn btn-g btn-sm" onclick="restoreSection('profile')" title="Restore profile from backup">♻️ Restore</button>
-            </div>
+
         </div>
         <form class="fg" onsubmit="event.preventDefault(); saveProfile();">
             <div class="fr">
@@ -1543,8 +1586,6 @@ $page_view_count = $dal->getPageViewCount('dashboard');
             </div>
             <div style="display:flex;gap:8px;">
                 <button class="btn btn-p btn-sm" onclick="openEduModal()">+ Add New</button>
-                <button class="btn btn-e btn-sm" onclick="backupSection('education')" title="Save current education as backup">📦 Backup</button>
-                <button class="btn btn-g btn-sm" onclick="restoreSection('education')" title="Restore education from backup">♻️ Restore</button>
             </div>
         </div>
         <div class="crud" id="eduList"></div>
@@ -1566,8 +1607,6 @@ $page_view_count = $dal->getPageViewCount('dashboard');
             </div>
             <div style="display:flex;gap:8px;">
                 <button class="btn btn-p btn-sm" onclick="openProjModal()">+ Add New</button>
-                <button class="btn btn-e btn-sm" onclick="backupSection('projects')" title="Save current projects as backup">📦 Backup</button>
-                <button class="btn btn-g btn-sm" onclick="restoreSection('projects')" title="Restore projects from backup">♻️ Restore</button>
             </div>
         </div>
         <div class="crud" id="projList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;"></div>
@@ -1605,8 +1644,6 @@ $page_view_count = $dal->getPageViewCount('dashboard');
             </div>
             <div style="display:flex;gap:8px;">
                 <button class="btn btn-p btn-sm" onclick="openModal('moHobby')">+ Add Item</button>
-                <button class="btn btn-e btn-sm" onclick="backupSection('hobbies')" title="Save current hobbies as backup">📦 Backup</button>
-                <button class="btn btn-g btn-sm" onclick="restoreSection('hobbies')" title="Restore hobbies from backup">♻️ Restore</button>
             </div>
         </div>
         <div id="hobbyList"></div>
@@ -1628,8 +1665,6 @@ $page_view_count = $dal->getPageViewCount('dashboard');
             </div>
             <div style="display:flex;gap:8px;">
                 <button class="btn btn-p btn-sm" onclick="openModal('moContact')">+ Add New</button>
-                <button class="btn btn-e btn-sm" onclick="backupSection('contacts')" title="Save current contacts as backup">📦 Backup</button>
-                <button class="btn btn-g btn-sm" onclick="restoreSection('contacts')" title="Restore contacts from backup">♻️ Restore</button>
             </div>
         </div>
         <div class="cgrid" id="contactList"></div>
@@ -1700,7 +1735,7 @@ $page_view_count = $dal->getPageViewCount('dashboard');
             <h3>Add Hobby Category</h3>
             <button class="mclose" onclick="closeModal('moCategoryHobby')">✕</button>
         </div>
-        <form class="fg" onsubmit="event.preventDefault(); saveHobbyCategory();">
+        <form class="fg" onsubmit="event.preventDefault(); saveHobbyCategory();" accept-charset="UTF-8">
             <div class="fg-row">
                 <label>Category Name</label>
                 <input type="text" class="fc" id="catName" placeholder="e.g., favorite_songs" required>
@@ -1776,7 +1811,16 @@ $page_view_count = $dal->getPageViewCount('dashboard');
                 </select>
             </div>
             <div class="fg-row"><label>Name</label><input type="text" class="fc" id="hobbyName" placeholder="e.g., One Piece"></div>
-            <div class="fg-row"><label>Description</label><textarea class="fc" id="hobbyDesc" rows="2" placeholder="Short description (optional)"></textarea></div>
+            <div class="fg-row"><label>Description</label><textarea class="fc" id="hobbyDesc" rows="2" placeholder="Short description (optional)" style="text-align: justify;"></textarea></div>
+            <div class="fg-row">
+                <label>Proficiency Level</label>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <input type="range" id="hobbyProficiency" min="0" max="100" value="0"
+                           style="flex:1;" oninput="document.getElementById('hobbyProfValue').textContent = this.value + '%'">
+                    <span id="hobbyProfValue" style="width:50px;text-align:center;font-weight:600;">0%</span>
+                </div>
+                <small style="color:var(--muted);font-size:0.75rem;">0 = Hide proficiency bar</small>
+            </div>
             <div class="fg-row">
                 <label>Image</label>
                 <div style="position:relative;">
@@ -1825,6 +1869,19 @@ $page_view_count = $dal->getPageViewCount('dashboard');
             <div class="fg-row">
                 <label>Item Name</label>
                 <input type="text" class="fc" id="editHobName" placeholder="e.g., One Piece">
+            </div>
+            <div class="fg-row">
+                <label>Description</label>
+                <textarea class="fc" id="editHobDesc" rows="2" placeholder="Short description (optional)" style="text-align: justify;"></textarea>
+            </div>
+            <div class="fg-row">
+                <label>Proficiency Level</label>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <input type="range" id="editHobProficiency" min="0" max="100" value="0"
+                           style="flex:1;" oninput="document.getElementById('editHobProfValue').textContent = this.value + '%'">
+                    <span id="editHobProfValue" style="width:50px;text-align:center;font-weight:600;">0%</span>
+                </div>
+                <small style="color:var(--muted);font-size:0.75rem;">0 = Hide proficiency bar</small>
             </div>
             <div class="fg-row">
                 <label>New Image (optional)</label>
@@ -1897,12 +1954,29 @@ function toggleSidebar() {
 function closeSidebar() {
     const sb = document.getElementById('sb');
     const overlay = document.getElementById('sidebarOverlay');
-    
+
     if (sb && overlay) {
         sb.classList.remove('open');
         overlay.style.display = 'none';
     }
 }
+
+// ── SETTINGS MENU TOGGLE ───────────────────────────────────────
+function toggleSettingsMenu() {
+    const menu = document.getElementById('settingsMenu');
+    if (menu) {
+        menu.classList.toggle('show');
+    }
+}
+
+// Close settings menu when clicking outside
+document.addEventListener('click', function(event) {
+    const dropdown = document.querySelector('.settings-dropdown');
+    const menu = document.getElementById('settingsMenu');
+    if (dropdown && menu && !dropdown.contains(event.target)) {
+        menu.classList.remove('show');
+    }
+});
 
 // Close sidebar when window resizes to desktop
 window.addEventListener('resize', function() {
@@ -2021,7 +2095,7 @@ function delHobbyCategory(catId) {
     formData.append('action', 'delete_category');
     formData.append('id', catId);
     
-    fetch('api/hobbies.php', { method: 'POST', body: formData })
+    fetch('direct_delete_category.php', { method: 'POST', body: formData })
         .then(r => r.json())
         .then(d => {
             if (d.success) {
@@ -2124,7 +2198,7 @@ function renderEmojiGrid(pickerId) {
     
     grid.innerHTML = filtered.map(e => {
         const clickFn = pickerId === 'catEmojiPicker' ? `selectEmoji('${e.emoji}')` : `selectEditEmoji('${e.emoji}')`;
-        return `<button type="button" style="background:rgba(255,255,255,0.1);border:1px solid var(--border);border-radius:6px;padding:8px;cursor:pointer;font-size:1.3rem;transition:all .2s;" onmouseover="this.background='rgba(102,126,234,0.3)'" onclick="${clickFn}; return false;">${e.emoji}</button>`;
+        return `<button type="button" style="background:rgba(255,255,255,0.1);border:1px solid var(--border);border-radius:6px;padding:8px;cursor:pointer;font-size:1.3rem;transition:all .2s;" onmouseover="this.style.background='rgba(102,126,234,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'" onclick="${clickFn}; return false;">${e.emoji}</button>`;
     }).join('');
 }
 
@@ -2258,10 +2332,6 @@ function openModal(id) {
     }
 }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-document.querySelectorAll('.mo').forEach(m => {
-    m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
-});
 
 // ── EDUCATION ────────────────────────────────────────────────
 function renderEdu() {
@@ -2606,33 +2676,35 @@ function saveHobby() {
     const categoryId = parseInt(catSelect.value) || hobbyCategories[0]?.id || 1;
     const name = document.getElementById('hobbyName').value.trim();
     const description = document.getElementById('hobbyDesc').value.trim();
+    const proficiency = document.getElementById('hobbyProficiency').value;
     const imageFile = document.getElementById('hobbyImg').files[0];
     const audioFile = document.getElementById('hobbyAudio').files[0];
-    
+
     // Only name is required
     if (!name) {
         showToast('⚠️ Hobby name is required!');
         return;
     }
-    
+
     // Validate file sizes if files are provided
     const maxImgSize = 10 * 1024 * 1024; // 10MB
     if (imageFile && imageFile.size > maxImgSize) {
         showToast('Image exceeds 10MB limit! Selected: ' + (imageFile.size / 1024 / 1024).toFixed(1) + 'MB');
         return;
     }
-    
+
     const maxAudioSize = 50 * 1024 * 1024; // 50MB
     if (audioFile && audioFile.size > maxAudioSize) {
         showToast('Audio exceeds 50MB limit! Selected: ' + (audioFile.size / 1024 / 1024).toFixed(1) + 'MB');
         return;
     }
-    
+
     const formData = new FormData();
     formData.append('action', 'add');
     formData.append('category_id', categoryId);
     formData.append('item_name', name);
     formData.append('description', description);
+    formData.append('proficiency_level', proficiency);
     if (imageFile) {
         formData.append('image', imageFile);
     } else {
@@ -2659,10 +2731,10 @@ function saveHobby() {
 function delHob(ci, ii) {
     if (!confirm('Delete this hobby?')) return;
     const id = hob[ci].items[ii].id;
-    fetch('api/hobbies.php', { 
-        method: 'DELETE', 
+    fetch('api/hobbies.php', {
+        method: 'DELETE',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'id=' + id 
+        body: 'id=' + id
     })
     .then(r => r.json())
     .then(d => {
@@ -2681,9 +2753,12 @@ function editHobImg(ci, ii) {
     document.getElementById('editHobId').value = item.id;
     document.getElementById('editHobCatId').value = hob[ci].category_id;
     document.getElementById('editHobName').value = item.name;
+    document.getElementById('editHobDesc').value = item.description || '';
     document.getElementById('editHobPreview').src = 'img/' + item.image;
     document.getElementById('editHobFile').value = '';
     document.getElementById('editHobAudio').value = '';
+    document.getElementById('editHobProficiency').value = item.proficiency || 0;
+    document.getElementById('editHobProfValue').textContent = (item.proficiency || 0) + '%';
     clearEditHobbyAudio();
     toggleEditHobbyAudioField(hob[ci].category_id);
     openModal('moEditHobby');
@@ -2740,30 +2815,34 @@ function toggleEditHobbyAudioField(categoryId) {
 function saveHobEdit() {
     const id = document.getElementById('editHobId').value;
     const name = document.getElementById('editHobName').value.trim();
+    const description = document.getElementById('editHobDesc').value.trim();
     const categoryId = document.getElementById('editHobCatId').value;
+    const proficiency = document.getElementById('editHobProficiency').value;
     const imgFile = document.getElementById('editHobFile').files[0];
     const audioFile = document.getElementById('editHobAudio').files[0];
-    
+
     if (!name) {
         showToast('Item name is required');
         return;
     }
-    
+
     if (imgFile && imgFile.size > 10 * 1024 * 1024) {
         showToast('Image exceeds 10MB limit! Selected: ' + (imgFile.size / 1024 / 1024).toFixed(1) + 'MB');
         return;
     }
-    
+
     if (audioFile && audioFile.size > 50 * 1024 * 1024) {
         showToast('Audio exceeds 50MB limit! Selected: ' + (audioFile.size / 1024 / 1024).toFixed(1) + 'MB');
         return;
     }
-    
+
     const formData = new FormData();
     formData.append('action', 'update_details');
     formData.append('id', id);
     formData.append('item_name', name);
+    formData.append('description', description);
     formData.append('category_id', categoryId);
+    formData.append('proficiency_level', proficiency);
     if (imgFile) {
         formData.append('image', imgFile);
     }

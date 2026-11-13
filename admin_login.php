@@ -36,7 +36,7 @@ function recordFailedLock(PDO $conn, string $lockKey): array {
     $lockedUntil = null;
 
     if ($attempts >= 3) {
-        $lockedUntil = date('Y-m-d H:i:s', time() + (2 * 60 * 60));
+        $lockedUntil = date('Y-m-d H:i:s', time() + (3 * 60));
         $attempts = 0;
     }
 
@@ -70,7 +70,12 @@ try {
 
         if (!empty($lockRow['locked_until']) && strtotime($lockRow['locked_until']) > time()) {
             $remainingMinutes = (int) ceil((strtotime($lockRow['locked_until']) - time()) / 60);
-            $error_message = 'Too many failed attempts. Try again in ' . $remainingMinutes . ' minutes.';
+            $remainingSeconds = (int) (strtotime($lockRow['locked_until']) - time()) % 60;
+            if ($remainingMinutes > 0) {
+                $error_message = 'Too many failed attempts. Try again in ' . $remainingMinutes . ' minute(s).';
+            } else {
+                $error_message = 'Too many failed attempts. Try again in ' . $remainingSeconds . ' second(s).';
+            }
         } else {
             if (empty($username) || empty($password)) {
                 $error_message = 'Please enter both username and password';
@@ -82,7 +87,7 @@ try {
                 if (!$admin) {
                     $lock = recordFailedLock($conn, $lockKey);
                     if ($lock['locked_until']) {
-                        $error_message = 'Too many failed attempts. Login locked for 2 hours.';
+                        $error_message = 'Too many failed attempts. Login locked for 3 minutes.';
                     } else {
                         $remaining = 3 - (int) $lock['attempts'];
                         $error_message = 'Username not found. ' . $remaining . ' attempt(s) left before lockout.';
@@ -102,7 +107,7 @@ try {
                     } else {
                         $lock = recordFailedLock($conn, 'admin-login:' . strtolower($username));
                         if ($lock['locked_until']) {
-                            $error_message = 'Too many failed attempts. Login locked for 2 hours.';
+                            $error_message = 'Too many failed attempts. Login locked for 3 minutes.';
                         } else {
                             $remaining = 3 - (int) $lock['attempts'];
                             $error_message = 'Password incorrect. ' . $remaining . ' attempt(s) left before lockout.';

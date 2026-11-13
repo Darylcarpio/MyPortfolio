@@ -324,9 +324,9 @@ class PortfolioDAL {
     // ===== HOBBIES METHODS =====
     public function getHobbies() {
         $sql = "SELECT hc.id as category_id, hc.category_name, hc.display_name, hc.category_icon,
-                        hi.id as item_id, hi.item_name, hi.image, hi.audio_file, hi.sort_order as item_sort
-                FROM hobby_categories hc 
-                LEFT JOIN hobby_items hi ON hc.id = hi.category_id 
+                        hi.id as item_id, hi.item_name, hi.image, hi.audio_file, hi.description, hi.sort_order as item_sort, hi.proficiency_level
+                FROM hobby_categories hc
+                LEFT JOIN hobby_items hi ON hc.id = hi.category_id
                 ORDER BY hc.sort_order, hi.sort_order";
         return $this->db->fetchAll($sql);
     }
@@ -361,24 +361,28 @@ class PortfolioDAL {
     }
     
     public function addHobbyItem($data) {
-        $sql = "INSERT INTO hobby_items (category_id, item_name, image, audio_file, sort_order) VALUES (?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO hobby_items (category_id, item_name, image, audio_file, description, sort_order, proficiency_level) VALUES (?, ?, ?, ?, ?, ?, ?)";
         return $this->db->insert($sql, [
-            $data['category_id'], 
-            $data['item_name'], 
+            $data['category_id'],
+            $data['item_name'],
             $data['image'] ?? '',
             $data['audio_file'] ?? '',
-            $data['sort_order'] ?? 0
+            $data['description'] ?? '',
+            $data['sort_order'] ?? 0,
+            $data['proficiency_level'] ?? 0
         ]);
     }
-    
+
     public function updateHobbyItem($id, $data) {
-        $sql = "UPDATE hobby_items SET category_id = ?, item_name = ?, image = ?, audio_file = ?, sort_order = ? WHERE id = ?";
+        $sql = "UPDATE hobby_items SET category_id = ?, item_name = ?, image = ?, audio_file = ?, description = ?, sort_order = ?, proficiency_level = ? WHERE id = ?";
         return $this->db->update($sql, [
-            $data['category_id'], 
-            $data['item_name'], 
+            $data['category_id'],
+            $data['item_name'],
             $data['image'] ?? '',
             $data['audio_file'] ?? '',
+            $data['description'] ?? '',
             $data['sort_order'] ?? 0,
+            $data['proficiency_level'] ?? 0,
             $id
         ]);
     }
@@ -724,32 +728,6 @@ function formatAchievements($achievements_string) {
 
 function formatTechnologies($technologies_string) {
     return $technologies_string ? explode('|', $technologies_string) : [];
-}
-
-function groupHobbiesByCategory($hobbies) {
-    $grouped = [];
-    foreach ($hobbies as $hobby) {
-        $category = $hobby['category_name'];
-        if (!isset($grouped[$category])) {
-            $grouped[$category] = [
-                'category_id' => $hobby['category_id'],
-                'category_name' => $hobby['category_name'],
-                'display_name' => $hobby['display_name'],
-                'category_icon' => $hobby['category_icon'],
-                'items' => []
-            ];
-        }
-        if ($hobby['item_id']) {
-            $grouped[$category]['items'][] = [
-                'id' => $hobby['item_id'],
-                'name' => $hobby['item_name'],
-                'image' => $hobby['image'],
-                'audio_file' => $hobby['audio_file'],
-                'sort_order' => $hobby['item_sort']
-            ];
-        }
-    }
-    return $grouped;
 }
 
 // Test Connection Function

@@ -1,5 +1,6 @@
 <?php
 // api/hobbies.php - Hobbies CRUD API with File Upload & Backup/Restore
+ob_clean(); // Clear any output buffer
 header('Content-Type: application/json');
 session_start();
 
@@ -22,12 +23,12 @@ if ($method === 'GET') {
         if ($action === 'categories') {
             // Return all hobby categories
             $categories = $dal->getHobbyCategories();
-            echo json_encode(['success' => true, 'categories' => $categories]);
+            echo json_encode(['success' => true, 'categories' => $categories], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             exit();
         }
     } catch (Exception $e) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        echo json_encode(['success' => false, 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit();
     }
 }
@@ -50,31 +51,41 @@ function handleHobbyImageUpload() {
         }
         return '';
     }
-    
+
     $file = $_FILES['image'];
     $maxSize = 10 * 1024 * 1024; // 10MB
-    
+
     if ($file['size'] > $maxSize) {
         throw new Exception('File size exceeds 10MB limit (' . round($file['size'] / 1024 / 1024, 1) . 'MB uploaded)');
     }
-    
+
     // Accept all image types (no MIME restriction for admin flexibility)
-    
+
     $upload_dir = __DIR__ . '/../img/';
     if (!is_dir($upload_dir)) {
-        mkdir($upload_dir, 0755, true);
+        if (!mkdir($upload_dir, 0755, true)) {
+            throw new Exception('Failed to create img/ directory. Please create it manually.');
+        }
     }
-    
+
+    // Check if directory is writable
+    if (!is_writable($upload_dir)) {
+        throw new Exception('img/ directory is not writable. Please check permissions.');
+    }
+
     $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
     $filename = 'hobby_' . time() . '_' . uniqid() . '.' . strtolower($ext);
     $upload_path = $upload_dir . $filename;
-    
+
     if (!move_uploaded_file($file['tmp_name'], $upload_path)) {
-        throw new Exception('Failed to save image file');
+        throw new Exception('Failed to save image file. Check folder permissions.');
     }
-    
+
     return $filename;
 }
+
+// Clear any output buffer before JSON
+ob_clean();
 
 // Handle hobby audio file upload - returns filename or empty string
 function handleHobbyAudioUpload() {
@@ -94,34 +105,41 @@ function handleHobbyAudioUpload() {
         }
         return '';
     }
-    
+
     $file = $_FILES['audio'];
     $maxSize = 50 * 1024 * 1024; // 50MB for audio files
-    
+
     if ($file['size'] > $maxSize) {
         throw new Exception('Audio file exceeds 50MB limit (' . round($file['size'] / 1024 / 1024, 1) . 'MB uploaded)');
     }
-    
+
     // Validate audio file extensions
     $allowedExts = ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac', 'wma'];
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    
+
     if (!in_array($ext, $allowedExts)) {
         throw new Exception('Invalid audio format. Allowed: ' . implode(', ', $allowedExts));
     }
-    
+
     $upload_dir = __DIR__ . '/../audio/';
     if (!is_dir($upload_dir)) {
-        mkdir($upload_dir, 0755, true);
+        if (!mkdir($upload_dir, 0755, true)) {
+            throw new Exception('Failed to create audio/ directory. Please create it manually.');
+        }
     }
-    
+
+    // Check if directory is writable
+    if (!is_writable($upload_dir)) {
+        throw new Exception('audio/ directory is not writable. Please check permissions.');
+    }
+
     $filename = 'hobby_' . time() . '_' . uniqid() . '.' . $ext;
     $upload_path = $upload_dir . $filename;
-    
+
     if (!move_uploaded_file($file['tmp_name'], $upload_path)) {
-        throw new Exception('Failed to save audio file');
+        throw new Exception('Failed to save audio file. Check folder permissions.');
     }
-    
+
     return $filename;
 }
 
@@ -133,110 +151,135 @@ try {
             $display_name = trim($_POST['display_name'] ?? '');
             $category_icon = trim($_POST['category_icon'] ?? '⭐');
             $sort_order = (int)($_POST['sort_order'] ?? 99);
-            
+
             if (!$category_name || !$display_name) {
                 throw new Exception('Category name and display name are required');
             }
-            
+
             // Sanitize category name (lowercase, no special chars)
             $category_name = strtolower(preg_replace('/[^a-z0-9_-]/', '', str_replace(' ', '_', $category_name)));
-            
+
             if (empty($category_name)) {
                 throw new Exception('Category name is invalid');
             }
-            
+
             $data = [
                 'category_name' => $category_name,
                 'display_name' => $display_name,
                 'category_icon' => $category_icon,
                 'sort_order' => $sort_order
             ];
-            
+
             $id = $dal->addHobbyCategory($data);
             $dal->logActivity($_SESSION['admin_id'], 'category_add', 'hobby_categories', $id, "Added category: {$display_name}");
-            echo json_encode(['success' => true, 'message' => 'Category added successfully', 'id' => $id]);
+            $response = ['success' => true, 'message' => 'Category added successfully', 'id' => $id];
+            echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             
         } elseif ($action === 'update_category') {
             $id = (int)($_POST['id'] ?? 0);
             if (!$id) throw new Exception('Category ID is required');
-            
+
             $data = [
                 'display_name' => trim($_POST['display_name'] ?? ''),
                 'category_icon' => trim($_POST['category_icon'] ?? '⭐'),
                 'sort_order' => (int)($_POST['sort_order'] ?? 0)
             ];
-            
+
             if (empty($data['display_name'])) {
                 throw new Exception('Display name is required');
             }
-            
-            $dal->updateHobbyCategory($id, $data);
-            $dal->logActivity($_SESSION['admin_id'], 'category_update', 'hobby_categories', $id, "Updated: {$data['display_name']}");
-            echo json_encode(['success' => true, 'message' => 'Category updated successfully']);
-            
+
+            try {
+                $dal->updateHobbyCategory($id, $data);
+                $dal->logActivity($_SESSION['admin_id'], 'category_update', 'hobby_categories', $id, "Updated: {$data['display_name']}");
+                echo json_encode(['success' => true, 'message' => 'Category updated successfully'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            } catch (Exception $e) {
+                throw new Exception('Failed to update category: ' . $e->getMessage());
+            }
+
         } elseif ($action === 'delete_category') {
             $id = (int)($_POST['id'] ?? 0);
             if (!$id) throw new Exception('Category ID is required');
-            
+
             // Check if category has items
             $items = $dal->db->fetchAll("SELECT COUNT(id) as count FROM hobby_items WHERE category_id = ?", [$id]);
             if (!empty($items) && $items[0]['count'] > 0) {
-                throw new Exception('Cannot delete category with items. Delete items first.');
+                // Allow deleting categories with items by deleting items first
+                $conn = $db->getConnection();
+                $conn->prepare("DELETE FROM hobby_items WHERE category_id = ?")->execute([$id]);
             }
-            
-            $dal->deleteHobbyCategory($id);
-            $dal->logActivity($_SESSION['admin_id'], 'category_delete', 'hobby_categories', $id);
-            echo json_encode(['success' => true, 'message' => 'Category deleted successfully']);
+
+            try {
+                $dal->deleteHobbyCategory($id);
+                $dal->logActivity($_SESSION['admin_id'], 'category_delete', 'hobby_categories', $id);
+                echo json_encode(['success' => true, 'message' => 'Category deleted successfully'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            } catch (Exception $e) {
+                throw new Exception('Failed to delete category: ' . $e->getMessage());
+            }
             
         } elseif ($action === 'add') {
             // Handle image upload
             $uploadedImage = handleHobbyImageUpload();
-            
+
             // Handle audio upload (optional, for music categories)
             $uploadedAudio = handleHobbyAudioUpload();
-            
+
             $data = [
                 'category_id' => (int)($_POST['category_id'] ?? 0),
                 'item_name' => $_POST['item_name'] ?? '',
                 'image' => $uploadedImage ?: ($_POST['image'] ?? 'placeholder.jpg'),
                 'audio_file' => $uploadedAudio,
-                'sort_order' => (int)($_POST['sort_order'] ?? 0)
+                'description' => $_POST['description'] ?? '',
+                'sort_order' => (int)($_POST['sort_order'] ?? 0),
+                'proficiency_level' => (int)($_POST['proficiency_level'] ?? 0)
             ];
-            
+
+            // Validate proficiency level
+            if ($data['proficiency_level'] < 0 || $data['proficiency_level'] > 100) {
+                throw new Exception('Proficiency level must be between 0 and 100');
+            }
+
             if (!$data['category_id'] || empty($data['item_name'])) {
                 throw new Exception('Category and Item Name are required');
             }
-            
+
             $id = $dal->addHobbyItem($data);
             $dal->logActivity($_SESSION['admin_id'], 'hobby_add', 'hobbies', $id, "Added: {$data['item_name']}");
-            echo json_encode(['success' => true, 'message' => 'Hobby added successfully', 'id' => $id]);
+            echo json_encode(['success' => true, 'message' => 'Hobby added successfully', 'id' => $id], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             
         } elseif ($action === 'update') {
             $id = $_POST['id'] ?? 0;
             if (!$id) throw new Exception('ID is required');
-            
+
             // Handle audio upload (optional, for music categories)
             $uploadedAudio = handleHobbyAudioUpload();
-            
+
             $data = [
                 'category_id' => (int)($_POST['category_id'] ?? 0),
                 'item_name' => $_POST['item_name'] ?? '',
                 'image' => $_POST['image'] ?? 'placeholder.jpg',
-                'sort_order' => (int)($_POST['sort_order'] ?? 0)
+                'description' => $_POST['description'] ?? '',
+                'sort_order' => (int)($_POST['sort_order'] ?? 0),
+                'proficiency_level' => (int)($_POST['proficiency_level'] ?? 0)
             ];
-            
+
+            // Validate proficiency level
+            if ($data['proficiency_level'] < 0 || $data['proficiency_level'] > 100) {
+                throw new Exception('Proficiency level must be between 0 and 100');
+            }
+
             // Only add audio_file if one was uploaded
             if ($uploadedAudio) {
                 $data['audio_file'] = $uploadedAudio;
             }
-            
+
             if (!$data['category_id'] || empty($data['item_name'])) {
                 throw new Exception('Category and Item Name are required');
             }
-            
+
             $dal->updateHobbyItem($id, $data);
             $dal->logActivity($_SESSION['admin_id'], 'hobby_update', 'hobbies', $id, "Updated: {$data['item_name']}");
-            echo json_encode(['success' => true, 'message' => 'Hobby updated successfully']);
+            echo json_encode(['success' => true, 'message' => 'Hobby updated successfully'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             
         } elseif ($action === 'update_image') {
             $id = $_POST['id'] ?? 0;
@@ -249,8 +292,8 @@ try {
             
             $dal->updateHobbyItemImage($id, $uploadedImage);
             $dal->logActivity($_SESSION['admin_id'], 'hobby_image', 'hobbies', $id, "Image: $uploadedImage");
-            
-            echo json_encode(['success' => true, 'message' => 'Image updated successfully', 'filename' => $uploadedImage]);
+
+            echo json_encode(['success' => true, 'message' => 'Image updated successfully', 'filename' => $uploadedImage], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             
         } elseif ($action === 'update_details') {
             // Update hobby name and optionally image and audio
@@ -258,8 +301,9 @@ try {
             if (!$id) throw new Exception('ID is required');
             
             $itemName = $_POST['item_name'] ?? '';
+            $description = $_POST['description'] ?? '';
             $categoryId = (int)($_POST['category_id'] ?? 0);
-            
+
             if (empty($itemName)) {
                 throw new Exception('Item name is required');
             }
@@ -282,25 +326,32 @@ try {
             
             // Get existing values
             $db = Database::getInstance();
-            $existing = $db->fetch("SELECT image, audio_file, sort_order FROM hobby_items WHERE id = ?", [$id]);
-            
+            $existing = $db->fetch("SELECT image, audio_file, sort_order, proficiency_level, description FROM hobby_items WHERE id = ?", [$id]);
+
             // Build update data
             $data = [
                 'category_id' => $categoryId,
                 'item_name' => $itemName,
+                'description' => $description !== '' ? $description : ($existing['description'] ?? ''),
                 'image' => $uploadedImage ?: ($existing['image'] ?? 'placeholder.jpg'),
-                'sort_order' => $existing['sort_order'] ?? 0
+                'sort_order' => $existing['sort_order'] ?? 0,
+                'proficiency_level' => (int)($_POST['proficiency_level'] ?? $existing['proficiency_level'] ?? 0)
             ];
-            
+
+            // Validate proficiency level
+            if ($data['proficiency_level'] < 0 || $data['proficiency_level'] > 100) {
+                throw new Exception('Proficiency level must be between 0 and 100');
+            }
+
             // Add audio if provided
             if ($uploadedAudio) {
                 $data['audio_file'] = $uploadedAudio;
             }
             
             $dal->updateHobbyItem($id, $data);
-            
+
             $dal->logActivity($_SESSION['admin_id'], 'hobby_update', 'hobbies', $id, "Updated: {$itemName}");
-            echo json_encode(['success' => true, 'message' => 'Hobby updated successfully']);
+            echo json_encode(['success' => true, 'message' => 'Hobby updated successfully'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             
         } elseif ($action === 'restore') {
             // Restore hobbies from backup JSON
@@ -338,7 +389,7 @@ try {
             }
             
             $dal->logActivity($_SESSION['admin_id'], 'hobby_restore', 'hobbies', null, "Restored {$count} hobby items from backup");
-            echo json_encode(['success' => true, 'message' => "{$count} hobby items restored successfully"]);
+            echo json_encode(['success' => true, 'message' => "{$count} hobby items restored successfully"], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         }
         
     } elseif ($method === 'DELETE') {
@@ -349,7 +400,7 @@ try {
         
         $dal->deleteHobbyItem($id);
         $dal->logActivity($_SESSION['admin_id'], 'hobby_delete', 'hobbies', $id);
-        echo json_encode(['success' => true, 'message' => 'Hobby deleted successfully']);
+        echo json_encode(['success' => true, 'message' => 'Hobby deleted successfully'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         
     } else {
         throw new Exception('Invalid request method');
@@ -357,6 +408,6 @@ try {
     
 } catch (Exception $e) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
 ?>

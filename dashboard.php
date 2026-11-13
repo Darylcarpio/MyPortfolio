@@ -47,6 +47,31 @@ if (isset($profile['professional_title'])) {
 if (isset($profile['bio'])) {
     $profile['vision'] = $profile['bio'];
 }
+
+// Helper function to group hobbies by category
+function groupHobbiesByCategory($hobbies_data) {
+    $grouped = [];
+    foreach ($hobbies_data as $hobby) {
+        $category_key = $hobby['category_name'];
+        if (!isset($grouped[$category_key])) {
+            $grouped[$category_key] = [
+                'display_name' => $hobby['display_name'],
+                'category_icon' => $hobby['category_icon'],
+                'items' => []
+            ];
+        }
+        if (!empty($hobby['item_name'])) {
+            $grouped[$category_key]['items'][] = [
+                'name' => $hobby['item_name'],
+                'image' => $hobby['image'],
+                'audio_file' => $hobby['audio_file'] ?? '',
+                'description' => $hobby['description'] ?? '',
+                'proficiency' => $hobby['proficiency_level'] ?? 0
+            ];
+        }
+    }
+    return $grouped;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
@@ -416,6 +441,277 @@ if (isset($profile['bio'])) {
             color: var(--highlight);
             font-weight: 700;
         }
+
+        /* Hobbies Item Description */
+        .item-description {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+        }
+
+        /* Hobby Modal */
+        .hobby-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .hobby-modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .hobby-modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            max-width: 900px;
+            max-height: 90%;
+            overflow-y: auto;
+            padding: 0;
+            position: relative;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: row;
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .hobby-modal.active .hobby-modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .hobby-modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            max-width: 900px;
+            max-height: 90%;
+            overflow-y: auto;
+            padding: 0;
+            position: relative;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: row;
+        }
+
+        .hobby-modal-left {
+            flex: 0 0 60%;
+            background: rgba(0,0,0,0.3);
+            padding: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px 0 0 20px;
+        }
+
+        .hobby-modal-right {
+            flex: 0 0 40%;
+            padding: 30px;
+            position: relative;
+            background: var(--card-bg);
+            border-radius: 0 20px 20px 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hobby-modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.7);
+            color: #ffffff;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .hobby-modal-close:hover {
+            background: rgba(240,84,84,0.9);
+            color: #ffffff;
+            border-color: rgba(240,84,84,0.5);
+        }
+
+        .hobby-modal-image {
+            width: 100%;
+            max-height: 500px;
+            object-fit: contain;
+            border-radius: 12px;
+            transition: opacity 0.2s ease;
+        }
+
+        .hobby-modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 15px;
+            margin-top: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .hobby-modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 15px;
+            margin-top: 0;
+        }
+
+        .hobby-modal-description {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1.6;
+            flex: 1;
+            overflow-y: auto;
+            max-height: 300px;
+            padding-right: 10px;
+            transition: opacity 0.2s ease;
+            text-align: justify;
+        }
+
+        .hobby-modal-description::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .hobby-modal-description::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+        }
+
+        .hobby-modal-description::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+        }
+
+        .hobby-modal-description::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .hobby-modal-proficiency {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+
+        .proficiency-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .proficiency-bar-container {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+
+        .proficiency-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #f05454 0%, #f6b93b 50%, #43d98c 100%);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 1s ease-out;
+        }
+
+        .proficiency-value {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .hobby-modal-nav {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+
+        .nav-btn {
+            flex: 1;
+            padding: 10px 15px;
+            background: rgba(102,126,234,0.1);
+            border: 1px solid rgba(102,126,234,0.3);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(102,126,234,0.2);
+            border-color: rgba(102,126,234,0.5);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .nav-btn:disabled:hover {
+            background: rgba(102,126,234,0.1);
+            border-color: rgba(102,126,234,0.3);
+            transform: none;
+        }
+
+        /* Custom Toast Notification */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(102,126,234,0.4);
+            z-index: 20000;
+            opacity: 0;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+
+        .toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast-icon {
+            font-size: 1.5rem;
+        }
     </style>
 </head>
 <body>
@@ -483,6 +779,12 @@ if (isset($profile['bio'])) {
             </a>
         </div>
     </header>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="toast-notification">
+        <span class="toast-icon">📭</span>
+        <span id="toastMessage">No items in this category yet!</span>
+    </div>
 
     <!-- HOME SECTION - ISO 25010: Functional Suitability -->
     <section id="home" aria-label="Hero Section">
@@ -566,26 +868,28 @@ if (isset($profile['bio'])) {
             <div class="card">
                 <h3><?php echo htmlspecialchars($data['display_name']); ?> <?php echo htmlspecialchars($data['category_icon']); ?></h3>
                 <p>Discover my passions and interests in this category.</p>
-                <button onclick="toggleList('<?php echo $category; ?>-list','<?php echo $category; ?>-btn')" class="hobby-btn" id="<?php echo $category; ?>-btn">View Collection ▼</button>
-                <div id="<?php echo $category; ?>-list" class="hobby-list">
+                <button onclick="openFirstItem('<?php echo $category; ?>')" class="hobby-btn" id="<?php echo $category; ?>-btn">View Collection</button>
+                <div id="<?php echo $category; ?>-list" class="hobby-list" style="display: none;">
                     <?php
                     if (!empty($data['items'])):
                         foreach ($data['items'] as $item):
                     ?>
-                    <div class="hobby-item" tabindex="0">
+                    <div class="hobby-item" tabindex="0" data-category="<?php echo htmlspecialchars($category); ?>" data-index="<?php echo array_search($item, $data['items']); ?>">
                         <?php
                         // Better image path handling with dark fallback
-                        $image_path = !empty($item['image']) && $item['image'] !== 'placeholder.jpg' 
-                            ? 'img/' . htmlspecialchars($item['image']) 
+                        $image_path = !empty($item['image']) && $item['image'] !== 'placeholder.jpg'
+                            ? 'img/' . htmlspecialchars($item['image'])
                             : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzFhMWEyZSIvPjwvc3ZnPg==';
                         $fallback_img = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzFhMWEyZSIvPjwvc3ZnPg==';
                         ?>
-                        <img src="<?php echo $image_path; ?>" 
-                             alt="<?php echo htmlspecialchars($item['name']); ?> - Hobby/Skill item" 
-                             class="item-img" 
-                             loading="lazy"
-                             decoding="async"
-                             onerror="this.src='<?php echo $fallback_img; ?>'">>>
+                        <div style="position:relative;cursor:pointer;" class="hobby-img-wrapper">
+                            <img src="<?php echo $image_path; ?>"
+                                 alt="<?php echo htmlspecialchars($item['name']); ?> - Hobby/Skill item"
+                                 class="item-img"
+                                 loading="lazy"
+                                 decoding="async"
+                                 onerror="this.src='<?php echo $fallback_img; ?>'">>>
+                        </div>
                         <div class="item-name"><?php echo htmlspecialchars($item['name']); ?></div>
                         <?php if (!empty($item['audio_file'])): ?>
                         <div class="item-audio" style="width: 100%; margin-top: 0;">
@@ -733,6 +1037,38 @@ if (isset($profile['bio'])) {
     </footer>
 </div>
 
+<!-- Hobby Modal -->
+<div id="hobbyModal" class="hobby-modal">
+    <div class="hobby-modal-content">
+        <!-- Left: Image Panel -->
+        <div class="hobby-modal-left">
+            <img id="hobbyModalImage" class="hobby-modal-image" src="" alt="">
+        </div>
+        
+        <!-- Right: Content Panel -->
+        <div class="hobby-modal-right">
+            <button class="hobby-modal-close" onclick="closeHobbyModal()">✕</button>
+            <h3 id="hobbyModalTitle" class="hobby-modal-title"></h3>
+            <p id="hobbyModalDescription" class="hobby-modal-description"></p>
+
+            <!-- Proficiency Bar (hidden by default until feature is implemented) -->
+            <div id="hobbyModalProficiency" class="hobby-modal-proficiency" style="display:none;">
+                <div class="proficiency-label">Proficiency</div>
+                <div class="proficiency-bar-container">
+                    <div id="hobbyModalProfBar" class="proficiency-bar"></div>
+                </div>
+                <div id="hobbyModalProfValue" class="proficiency-value"></div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="hobby-modal-nav">
+                <button class="nav-btn nav-prev" onclick="navigateHobby(-1)">← Previous</button>
+                <button class="nav-btn nav-next" onclick="navigateHobby(1)">Next →</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ISO 25010: Performance Efficiency - Deferred Script Loading -->
 <script src="js/main.js" defer></script>
 
@@ -774,6 +1110,188 @@ function copyEmail() {
 }
 </script>
 <script src="JS/security.js"></script>
+
+<!-- Hobby Modal Functions -->
+<script>
+// Store hobbies data for navigation
+let hobbiesData = <?= json_encode($grouped_hobbies, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+let currentCategory = '';
+let currentItemIndex = 0;
+
+// Event delegation for hobby item clicks
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.hobby-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const category = this.getAttribute('data-category');
+            const index = parseInt(this.getAttribute('data-index'));
+            openHobbyModal(category, index);
+        });
+    });
+});
+
+function openHobbyModal(category, itemIndex) {
+    const categoryData = hobbiesData[category];
+    if (!categoryData || !categoryData.items || !categoryData.items[itemIndex]) {
+        console.error('Item not found:', category, itemIndex);
+        return;
+    }
+
+    const item = categoryData.items[itemIndex];
+    const modal = document.getElementById('hobbyModal');
+    const modalImage = document.getElementById('hobbyModalImage');
+    const modalTitle = document.getElementById('hobbyModalTitle');
+    const modalDescription = document.getElementById('hobbyModalDescription');
+    const modalProficiency = document.getElementById('hobbyModalProficiency');
+    const modalProfBar = document.getElementById('hobbyModalProfBar');
+    const modalProfValue = document.getElementById('hobbyModalProfValue');
+
+    // Store current position
+    currentCategory = category;
+    currentItemIndex = itemIndex;
+
+    const image_path = (item.image && item.image !== 'placeholder.jpg')
+        ? 'img/' + item.image
+        : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzFhMWEyZSIvPjwvc3ZnPg==';
+
+    modalImage.src = image_path;
+    modalTitle.textContent = item.name;
+    modalDescription.textContent = item.description || 'No description available';
+
+    // Handle proficiency bar
+    if (item.proficiency && item.proficiency > 0) {
+        modalProficiency.style.display = 'block';
+        modalProfBar.style.width = '0%'; // Start at 0 for animation
+        modalProfValue.textContent = '0%';
+
+        // Set color based on proficiency level
+        if (item.proficiency >= 70) {
+            modalProfBar.style.background = 'linear-gradient(90deg, #43d98c 0%, #1a9e62 100%)';
+        } else if (item.proficiency >= 40) {
+            modalProfBar.style.background = 'linear-gradient(90deg, #f6b93b 0%, #e55039 100%)';
+        } else {
+            modalProfBar.style.background = 'linear-gradient(90deg, #f05454 0%, #d63031 100%)';
+        }
+
+        // Animate the bar after modal opens
+        setTimeout(() => {
+            modalProfBar.style.width = item.proficiency + '%';
+            modalProfValue.textContent = item.proficiency + '%';
+        }, 300); // Wait 300ms for modal animation to start
+    } else {
+        modalProficiency.style.display = 'none';
+    }
+
+    // Update navigation buttons
+    updateNavButtons();
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function navigateHobby(direction) {
+    const categoryItems = hobbiesData[currentCategory]?.items || [];
+    if (categoryItems.length === 0) return;
+
+    const newIndex = currentItemIndex + direction;
+
+    // Check bounds
+    if (newIndex < 0 || newIndex >= categoryItems.length) return;
+
+    const item = categoryItems[newIndex];
+    const image_path = (item.image && item.image !== 'placeholder.jpg')
+        ? 'img/' + item.image
+        : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzFhMWEyZSIvPjwvc3ZnPg==';
+
+    // Update content with animation
+    const modalImage = document.getElementById('hobbyModalImage');
+    const modalTitle = document.getElementById('hobbyModalTitle');
+    const modalDescription = document.getElementById('hobbyModalDescription');
+
+    // Fade out
+    modalImage.style.opacity = '0';
+    modalTitle.style.opacity = '0';
+    modalDescription.style.opacity = '0';
+
+    setTimeout(() => {
+        currentItemIndex = newIndex;
+        modalImage.src = image_path;
+        modalTitle.textContent = item.name;
+        modalDescription.textContent = item.description || 'No description available';
+
+        // Reset proficiency bar
+        const modalProficiency = document.getElementById('hobbyModalProficiency');
+        const modalProfBar = document.getElementById('hobbyModalProfBar');
+        const modalProfValue = document.getElementById('hobbyModalProfValue');
+
+        if (item.proficiency && item.proficiency > 0) {
+            modalProficiency.style.display = 'block';
+            modalProfBar.style.width = '0%';
+            modalProfValue.textContent = '0%';
+
+            if (item.proficiency >= 70) {
+                modalProfBar.style.background = 'linear-gradient(90deg, #43d98c 0%, #1a9e62 100%)';
+            } else if (item.proficiency >= 40) {
+                modalProfBar.style.background = 'linear-gradient(90deg, #f6b93b 0%, #e55039 100%)';
+            } else {
+                modalProfBar.style.background = 'linear-gradient(90deg, #f05454 0%, #d63031 100%)';
+            }
+
+            setTimeout(() => {
+                modalProfBar.style.width = item.proficiency + '%';
+                modalProfValue.textContent = item.proficiency + '%';
+            }, 300);
+        } else {
+            modalProficiency.style.display = 'none';
+        }
+
+        updateNavButtons();
+
+        // Fade in
+        modalImage.style.opacity = '1';
+        modalTitle.style.opacity = '1';
+        modalDescription.style.opacity = '1';
+    }, 200);
+}
+
+function updateNavButtons() {
+    const categoryItems = hobbiesData[currentCategory]?.items || [];
+    const prevBtn = document.querySelector('.nav-prev');
+    const nextBtn = document.querySelector('.nav-next');
+
+    prevBtn.disabled = currentItemIndex <= 0;
+    nextBtn.disabled = currentItemIndex >= categoryItems.length - 1;
+}
+
+function closeHobbyModal() {
+    const modal = document.getElementById('hobbyModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function openFirstItem(category) {
+    const categoryData = hobbiesData[category];
+    if (!categoryData || !categoryData.items || categoryData.items.length === 0) {
+        showToast('No items in this category yet!');
+        return;
+    }
+
+    // Open modal with first item (index 0)
+    openHobbyModal(category, 0);
+}
+
+function showToast(message) {
+    const toast = document.getElementById('toastNotification');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    toastMessage.textContent = message;
+    toast.classList.add('show');
+    
+    // Hide after 1.5 seconds
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 1500);
+}
+</script>
 
 </body>
 </html>
