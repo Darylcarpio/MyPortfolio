@@ -6,15 +6,22 @@ session_start();
 // Check admin authorization
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized - Please log in again']);
     exit();
 }
 
 require_once '../config.php';
+if (!class_exists('PortfolioDAL')) {
+    echo json_encode(['success' => false, 'message' => 'Configuration error - PortfolioDAL class not found']);
+    exit();
+}
 $dal = new PortfolioDAL();
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_POST['action'] ?? $_GET['action'] ?? null;
+
+// Debug logging
+error_log("Hobbies API: method=$method, action=$action");
 
 // Handle GET requests for fetching data
 if ($method === 'GET') {

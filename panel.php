@@ -2072,17 +2072,26 @@ function saveHobbyCategory() {
     formData.append('sort_order', hobbyCategories.length + 1);
     
     fetch('api/hobbies.php', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(d => {
-            if (d.success) {
-                closeModal('moCategoryHobby');
-                document.getElementById('catName').value = '';
-                document.getElementById('catDisplayName').value = '';
-                document.getElementById('catIcon').value = '⭐';
-                showToast('Category added! Refreshing...');
-                setTimeout(() => loadHobbyCategories(), 1000);
-            } else {
-                showToast('Error: ' + (d.message || 'Failed to add category'));
+        .then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+            return r.text();
+        })
+        .then(text => {
+            try {
+                const d = JSON.parse(text);
+                if (d.success) {
+                    closeModal('moCategoryHobby');
+                    document.getElementById('catName').value = '';
+                    document.getElementById('catDisplayName').value = '';
+                    document.getElementById('catIcon').value = '⭐';
+                    showToast('Category added! Refreshing...');
+                    setTimeout(() => loadHobbyCategories(), 1000);
+                } else {
+                    showToast('Error: ' + (d.message || 'Failed to add category'));
+                }
+            } catch (e) {
+                console.error('JSON Parse Error:', e, 'Response:', text);
+                showToast('Error: Invalid server response. Check console.');
             }
         })
         .catch(e => showToast('Error: ' + e.message));
@@ -2096,13 +2105,22 @@ function delHobbyCategory(catId) {
     formData.append('id', catId);
 
     fetch('api/hobbies.php', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(d => {
-            if (d.success) {
-                showToast('Category deleted!');
-                setTimeout(() => loadHobbyCategories(), 500);
-            } else {
-                showToast('Error: ' + (d.message || 'Failed to delete'));
+        .then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+            return r.text();
+        })
+        .then(text => {
+            try {
+                const d = JSON.parse(text);
+                if (d.success) {
+                    showToast('Category deleted!');
+                    setTimeout(() => loadHobbyCategories(), 500);
+                } else {
+                    showToast('Error: ' + (d.message || 'Failed to delete'));
+                }
+            } catch (e) {
+                console.error('JSON Parse Error:', e, 'Response:', text);
+                showToast('Error: Invalid server response. Check console.');
             }
         })
         .catch(e => showToast('Error: ' + e.message));
