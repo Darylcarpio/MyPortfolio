@@ -3221,6 +3221,6 @@ document.addEventListener('keydown', function(e) {
     }
 });
 </script>
-<script src="JS/security.js"></script>
+<script src="js/security.js"></script>
 </body>
 </html>
