@@ -1,6 +1,5 @@
 <?php
 // api/hobbies.php - Hobbies CRUD API with File Upload & Backup/Restore
-ob_clean(); // Clear any output buffer
 header('Content-Type: application/json');
 session_start();
 
@@ -83,9 +82,6 @@ function handleHobbyImageUpload() {
 
     return $filename;
 }
-
-// Clear any output buffer before JSON
-ob_clean();
 
 // Handle hobby audio file upload - returns filename or empty string
 function handleHobbyAudioUpload() {
