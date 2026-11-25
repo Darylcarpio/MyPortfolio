@@ -205,7 +205,7 @@ try {
             $items = $dal->db->fetchAll("SELECT COUNT(id) as count FROM hobby_items WHERE category_id = ?", [$id]);
             if (!empty($items) && $items[0]['count'] > 0) {
                 // Allow deleting categories with items by deleting items first
-                $conn = $db->getConnection();
+                $conn = $dal->db->getConnection();
                 $conn->prepare("DELETE FROM hobby_items WHERE category_id = ?")->execute([$id]);
             }
 
