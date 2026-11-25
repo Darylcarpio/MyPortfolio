@@ -218,7 +218,12 @@ try {
                 if (!$result) {
                     throw new Exception('Category deletion returned false');
                 }
-                $dal->logActivity($_SESSION['admin_id'], 'category_delete', 'hobby_categories', $id);
+                // Log activity (don't fail if this fails)
+                try {
+                    $dal->logActivity($_SESSION['admin_id'], 'category_delete', 'hobby_categories', $id);
+                } catch (Exception $logError) {
+                    // Ignore logging errors
+                }
                 echo json_encode(['success' => true, 'message' => 'Category deleted successfully'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             } catch (Exception $e) {
                 throw new Exception('Failed to delete category: ' . $e->getMessage());
