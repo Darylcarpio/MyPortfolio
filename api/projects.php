@@ -179,9 +179,10 @@ try {
                 $imagePaths = $existingProject['images'] ?? [];
             }
 
-            // If link not provided, keep existing link
+            // Handle link - allow clearing by checking if field was submitted
             $link = $_POST['link'] ?? '';
-            if (empty($link) && $existingProject) {
+            // Only preserve existing link if link field wasn't submitted at all
+            if (!isset($_POST['link']) && $existingProject) {
                 $link = $existingProject['link'] ?? '';
             }
 
