@@ -3,6 +3,18 @@
 header('Content-Type: application/json');
 session_start();
 
+// Set error handler to catch all errors
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    echo json_encode(['success' => false, 'message' => "PHP Error: $errstr in $errfile on line $errline"]);
+    exit();
+});
+
+// Set exception handler
+set_exception_handler(function($exception) {
+    echo json_encode(['success' => false, 'message' => "Exception: " . $exception->getMessage()]);
+    exit();
+});
+
 // Check admin authorization
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     http_response_code(401);
