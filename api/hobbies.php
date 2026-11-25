@@ -153,7 +153,7 @@ try {
             }
 
             // Sanitize category name (lowercase, no special chars)
-            $category_name = strtolower(preg_replace('/[^a-z0-9_-]/', '', str_replace(' ', '_', $category_name)));
+            $category_name = strtolower(preg_replace('/[^a-z0-9_-]/i', '', str_replace(' ', '_', $category_name)));
 
             if (empty($category_name)) {
                 throw new Exception('Category name is invalid');
