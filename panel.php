@@ -2090,12 +2090,12 @@ function saveHobbyCategory() {
 
 function delHobbyCategory(catId) {
     if (!confirm('Delete this category? Items in this category will also be deleted!')) return;
-    
+
     const formData = new FormData();
     formData.append('action', 'delete_category');
     formData.append('id', catId);
-    
-    fetch('direct_delete_category.php', { method: 'POST', body: formData })
+
+    fetch('api/hobbies.php', { method: 'POST', body: formData })
         .then(r => r.json())
         .then(d => {
             if (d.success) {
