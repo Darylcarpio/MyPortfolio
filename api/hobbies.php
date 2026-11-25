@@ -234,20 +234,8 @@ try {
             $id = (int)($_POST['id'] ?? 0);
             if (!$id) throw new Exception('Category ID is required');
 
-            // Check if category has items
-            $items = $dal->db->fetchAll("SELECT COUNT(id) as count FROM hobby_items WHERE category_id = ?", [$id]);
-            if (!empty($items) && $items[0]['count'] > 0) {
-                // Allow deleting categories with items by deleting items first
-                try {
-                    $conn = $dal->db->getConnection();
-                    $stmt = $conn->prepare("DELETE FROM hobby_items WHERE category_id = ?");
-                    $stmt->execute([$id]);
-                } catch (Exception $e) {
-                    throw new Exception('Failed to delete category items: ' . $e->getMessage());
-                }
-            }
-
             try {
+                // Delete category (items will be cascade deleted if foreign key exists)
                 $result = $dal->deleteHobbyCategory($id);
                 if (!$result) {
                     throw new Exception('Category deletion returned false');
