@@ -167,6 +167,9 @@ try {
             ];
 
             $id = $dal->addHobbyCategory($data);
+            if (!$id) {
+                throw new Exception('Failed to add category to database');
+            }
             $dal->logActivity($_SESSION['admin_id'], 'category_add', 'hobby_categories', $id, "Added category: {$display_name}");
             $response = ['success' => true, 'message' => 'Category added successfully', 'id' => $id];
             echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
