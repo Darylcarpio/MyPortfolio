@@ -204,12 +204,20 @@ try {
             $items = $dal->db->fetchAll("SELECT COUNT(id) as count FROM hobby_items WHERE category_id = ?", [$id]);
             if (!empty($items) && $items[0]['count'] > 0) {
                 // Allow deleting categories with items by deleting items first
-                $conn = $dal->db->getConnection();
-                $conn->prepare("DELETE FROM hobby_items WHERE category_id = ?")->execute([$id]);
+                try {
+                    $conn = $dal->db->getConnection();
+                    $stmt = $conn->prepare("DELETE FROM hobby_items WHERE category_id = ?");
+                    $stmt->execute([$id]);
+                } catch (Exception $e) {
+                    throw new Exception('Failed to delete category items: ' . $e->getMessage());
+                }
             }
 
             try {
-                $dal->deleteHobbyCategory($id);
+                $result = $dal->deleteHobbyCategory($id);
+                if (!$result) {
+                    throw new Exception('Category deletion returned false');
+                }
                 $dal->logActivity($_SESSION['admin_id'], 'category_delete', 'hobby_categories', $id);
                 echo json_encode(['success' => true, 'message' => 'Category deleted successfully'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             } catch (Exception $e) {
