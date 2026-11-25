@@ -140,4 +140,3 @@ try {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => $e->getMessage()], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
 }
-?>

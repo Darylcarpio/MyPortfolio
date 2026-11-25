@@ -409,4 +409,3 @@ function addToZip(&$zip, $dir, $base) {
     }
     @closedir($handle);
 }
-?>

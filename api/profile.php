@@ -128,4 +128,3 @@ try {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
-?>
